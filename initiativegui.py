@@ -10,13 +10,15 @@ class EntityFrame(Frame):
         self['relief']='groove'
         self.combatmanager=combatmanager
         #Name
+        self.name=StringVar()
         Label(self,text="Name:").grid(row=0,column=0,sticky=W)
-        self.name=Entry(self,width=15)
-        self.name.grid(row=0,column=1)
+        self.nameEntry=Entry(self,width=15,textvariable=self.name)
+        self.nameEntry.grid(row=0,column=1)
         #Health
+        self.health=StringVar()
         Label(self,text="Health:").grid(row=1,column=0,sticky=W)
-        self.health=Entry(self,width=10)
-        self.health.grid(row=1,column=1,sticky=W)
+        self.healthEntry=Entry(self,width=10,textvariable=self.health)
+        self.healthEntry.grid(row=1,column=1,sticky=W)
         #Bonus
         self.bonus=IntVar()
         Label(self,text="Bonus:").grid(row=2,column=0,sticky=W)
@@ -61,6 +63,48 @@ class EntityFrame(Frame):
         self.combatmanager.entities.remove(self)
         self.destroy()
 
+    def fillIn(self,name='',health='',bonus=0,player=False,):
+        self.name.set(name)
+        self.health.set(health)
+        self.bonus.set(bonus)
+        self.player.set(player)
+        self.playerCheckboxCallback()
+
+    def hasError(self):
+        error=False
+        #health
+        if dice.isHealth(self.health.get()):
+            self.healthEntry['background']='white'
+        else:
+            error=True
+            self.healthEntry['background']='red'                
+        #bonus
+        try:                
+            self.bonus.get()
+            self.bonusEntry['background']='white'
+        except ValueError:
+            error=True
+            self.bonusEntry['background']='red'
+        #player
+        if self.player.get():
+            #roll
+            try:
+                self.roll.get()
+                self.rollEntry['background']='white'
+            except ValueError:
+                error=True
+                self.rollEntry['background']='red'
+        else:
+            #amount
+            try:
+                self.amount.get()
+                self.amountSpinbox['background']='white'
+            except ValueError:
+                error=True
+                self.amountSpinbox['background']='red'
+        return error
+        
+
 
 
 class CombatManager():
@@ -69,9 +113,12 @@ class CombatManager():
         self.queue=EntityQueue()
         self.started=False
         #Menu
-        self.menu=Menu()
-        self.menu.add_command(label="File")
-        master.config(menu=self.menu)
+        self.menubar=Menu(master)
+        self.filemenu=Menu(self.menubar,tearoff=0)
+        self.filemenu.add_command(label="Load Player File",command=self.loadplayers)
+        self.menubar.add_cascade(label="File",menu=self.filemenu)
+        
+        master.config(menu=self.menubar)
         
         #frame containing entities
         self.canvasframe=Frame(master)
@@ -111,10 +158,12 @@ class CombatManager():
         #self.text.grid(columnspan=4,row=0,column=3,padx=10,pady=10)
 
         #command line, run and next buttons
+        self.command=StringVar()
         Label(master,text="Command:").grid(row=1,column=3)
-        self.commandEntry=Entry(master)
+        self.commandEntry=Entry(master,textvariable=self.command)
+        self.commandEntry.bind('<Return>',self.run)
         self.commandEntry.grid(row=1,column=4,sticky=W)
-        self.runButton=Button(master,text="Run",command=self.run)
+        self.runButton=Button(master,text="Run",command=self.run)        
         self.nextButton=Button(master,text="Next",command=self.next)
         self.runButton.grid(row=1,column=5,sticky=W)
         self.nextButton.grid(row=1,column=6)
@@ -132,49 +181,100 @@ class CombatManager():
         #two passes: one to check if any errors popped up, if not: one to actually make and append
         #entities
         for e in self.entities:
-            #health->regex nog afwerken
-            #bonus
-            try:                
-                e.bonus.get()
-                e.bonusEntry['background']='white'
-            except ValueError:
+            if e.hasError():
                 error=True
-                e.bonusEntry['background']='red'
-            #player
-            if e.player.get():
-                #roll
-                try:
-                    e.roll.get()
-                    e.rollEntry['background']='white'
-                except ValueError:
-                    error=True
-                    e.rollEntry['background']='red'
-            else:
-                #amount
-                try:
-                    e.amount.get()
-                    e.amountSpinbox['background']='white'
-                except ValueError:
-                    error=True
-                    e.amountSpinbox['background']='red'
-
         if error:
             messagebox.showwarning("Start","One or more entries contain errors.")
         else:
+            if self.started:
+                if messagebox.askyesno("Start","Are you sure you  want to restart combat? Progress will be lost."):
+                    self.queue.clear()
+                else:
+                    return
+            else:
+                self.started=True
             #second pass
             for e in self.entities:
                 if e.player.get():
-                    self.queue.append(Entity(e.name.get(),e.bonus.get(),10,e.roll.get(),True))
+                    self.queue.append(Entity(e.name.get(),e.bonus.get(),dice.getHealth(e.health.get()),e.roll.get(),True))
                 else:
-                    for i in range(e.amount.get()):
-                        self.queue.append(Entity(e.name.get()+" "+str(i+1),e.bonus.get(),10,dice.d20()))
+                    if e.amount.get()==1:
+                        self.queue.append(Entity(e.name.get(),e.bonus.get(),dice.getHealth(e.health.get()),dice.d20()))
+                    else:
+                        for i in range(e.amount.get()):
+                            self.queue.append(Entity(e.name.get()+" "+str(i+1),e.bonus.get(),dice.getHealth(e.health.get()),dice.d20()))
             self.queue.sort()
             self.refresh()
             
-                
-            
-    def run(self):
-        pass
+    def run(self,event=None):
+        command=self.command.get()
+        command=command.split()
+        if len(command)==0:
+            pass
+        #usage: next
+        #make the next active entity in the queue, the acting entity
+        elif (command[0]==commands[0] or command[0]==shortcuts[0]) and len(command)==1:
+            self.next()
+        #usage: heal n hp
+        #heals entity with index n hp points
+        elif (command[0]==commands[1] or command[0]==shortcuts[1]) and len(command)==3:
+            try:
+                self.queue.heal(int(command[1]),int(command[2]))
+                self.refresh()
+            except (ValueError, IndexError):
+                messagebox.showwarning("Run",'Not a valid number.')
+        #usage: damage n hp
+        #damages entity with index n hp points
+        elif (command[0]==commands[2] or command[0]==shortcuts[2]) and len(command)==3:
+            try:
+                self.queue.damage(int(command[1]),int(command[2]))
+                self.refresh()
+            except (ValueError, IndexError):
+                messagebox.showwarning("Run",'Not a valid number.')
+        #usage: remove n
+        #remove entity with number n from queue        
+        elif (command[0]==commands[3] or command[0]==shortcuts[3]) and len(command)==2:
+            try:
+                self.queue.remove(int(command[1]))
+                self.refresh()
+            except (ValueError, IndexError):
+                messagebox.showwarning("Run",'Not a valid number.')
+        #usage: restore n
+        #revive a perviously removed entity from the queue
+        elif (command[0]==commands[4] or command[0]==shortcuts[4]) and len(command)==2:
+            try:
+                self.queue.restore(int(command[1]))
+                self.refresh()
+            except (ValueError,IndexError):
+                messagebox.showwarning("Run",'Not a valid number.')
+        #usage: delay n
+        #substract n from current entity. n can be negative.
+        elif (command[0]==commands[5] or command[0]==shortcuts[5]) and len(command)==2:
+            try:
+                self.queue.delay(int(command[1]))
+                self.refresh()
+            except ValueError:
+                messagebox.showwarning("Run",'Not a valid number.')
+
+        elif (command[0]==commands[6] or command[0]==shortcuts[6]) and len(command)==1:
+            s=helpdict['help']+'\nCommands:\n'
+            for i in commands:
+                s+=i+'\n'
+            messagebox.showinfo("Help",s)
+        elif(command[0]==commands[6] or command[0]==shortcuts[6]) and len(command)==2:
+            try:
+                messagebox.showinfo("Help",helpdict[command[1]])
+            except KeyError:
+                s='Not a command\nCommands:\n'
+                for i in commands:
+                    s+=i+'\n'
+                messagebox.showinfo("Help",s)
+        else:
+            messagebox.showwarning("Run",'Unknown Command or Wrong Syntax.')
+        #check if there are any enemies left
+        if self.queue.activeEnemies()==0 and self.started:
+            messagebox.showinfo("Run",'All enemies defeated.')
+        self.command.set('')
 
     def next(self):
         self.queue.incr()
@@ -186,10 +286,15 @@ class CombatManager():
         self.text.insert(END,self.queue)
         self.text.config(state=DISABLED)
 
+    def loadplayers(self):
+        print('Coming soon')
 
 
 master=Tk()
 master.title("Combat Manager")
 master.resizable(width=False,height=False)
 cm=CombatManager(master)
+cm.entities[0].fillIn('Mathias','10',2,True)
+cm.add()
+cm.entities[1].fillIn('Goblin','3d4+2',1,False)
 master.mainloop()

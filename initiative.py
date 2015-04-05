@@ -66,6 +66,7 @@ class Entity:
     def __init__(self,name,bonus,maxHealth,roll,isPlayer=False):
         self.active=True
         self.name=name
+        self.bonus=bonus
         self.maxHealth=maxHealth
         self.health=maxHealth
         self.isPlayer=isPlayer
@@ -98,6 +99,11 @@ class EntityQueue:
     def append(self, entity):
         self.queue.append(entity)
         self.length+=1
+    def clear(self):
+        self.queue=[]
+        self.position=0
+        self.length=0
+        self.index=-1
     #sorts the queue on the initiative of entities, in descending order
     def sort(self):
         self.queue.sort(key=lambda x:x.initiative,reverse=True)
@@ -126,7 +132,7 @@ class EntityQueue:
     def restore(self,pos):
         self.queue[pos-1].active=True
     def delay(self,change):        
-        self.queue[queue.position].initiative-=change
+        self.queue[self.position].initiative-=change
         self.sort()
 
     #returns string representation of the queue
