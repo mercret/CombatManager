@@ -1,6 +1,8 @@
 from tkinter import *
 from tkinter import messagebox
+from tkinter import filedialog
 from initiative import *
+import json
 
 class EntityFrame(Frame):
 
@@ -57,17 +59,34 @@ class EntityFrame(Frame):
             self.rollEntry["state"]="disabled"
 
     def saveCallback(self):
-        print("Coming soon")
+        if self.name.get()=="":
+            messagebox.showwarning("Save","No name given.")
+            return
+        try:
+            filename=self.name.get()+".json"
+            f=open(filename,'w')
+            d=dict()
+            d['name']=self.name.get()
+            d['health']=self.health.get()
+            d['bonus']=self.bonus.get()
+            d['player']=self.player.get()
+            json.dump(d,f)
+            f.close()
+            messagebox.showinfo("Save","Entity saved as "+filename)
+        except OSError:
+            messagebox.showerror("Save","Could not save file")
+            
+            
 
     def destroyCallback(self):
         self.combatmanager.entities.remove(self)
         self.destroy()
 
-    def fillIn(self,name='',health='',bonus=0,player=False,):
-        self.name.set(name)
-        self.health.set(health)
-        self.bonus.set(bonus)
-        self.player.set(player)
+    def fillIn(self,entity):
+        self.name.set(entity['name'])
+        self.health.set(entity['health'])
+        self.bonus.set(entity['bonus'])
+        self.player.set(entity['player'])
         self.playerCheckboxCallback()
 
     def hasError(self):
@@ -110,13 +129,14 @@ class EntityFrame(Frame):
 class CombatManager():
 
     def __init__(self,master):
+        self.entities=[]
         self.queue=EntityQueue()
         self.started=False
         #Menu
         self.menubar=Menu(master)
         self.filemenu=Menu(self.menubar,tearoff=0)
-        self.filemenu.add_command(label="Load Player File",command=self.loadplayers)
-        self.menubar.add_cascade(label="File",menu=self.filemenu)
+        self.filemenu.add_command(label="Load File",command=self.loadCallback)
+        self.menubar.add_cascade(label="Menu",menu=self.filemenu)
         
         master.config(menu=self.menubar)
         
@@ -134,10 +154,12 @@ class CombatManager():
         self.canvas.create_window((0,0),window=self.frame,anchor='nw')
 
         self.frame.bind("<Configure>",self.configureCanvas)
+        #workaround
+        self.configureCanvas(None)
 
-        self.entities=[]
-        self.entities.append(EntityFrame(self.frame,self))
-        self.entities[0].pack(padx=5,pady=5)
+        
+        #self.entities.append(EntityFrame(self.frame,self))
+        #self.entities[0].pack(padx=5,pady=5)
 
         
 
@@ -160,11 +182,11 @@ class CombatManager():
         #command line, run and next buttons
         self.command=StringVar()
         Label(master,text="Command:").grid(row=1,column=3)
-        self.commandEntry=Entry(master,textvariable=self.command)
+        self.commandEntry=Entry(master,textvariable=self.command,state='disabled')
         self.commandEntry.bind('<Return>',self.run)
         self.commandEntry.grid(row=1,column=4,sticky=W)
-        self.runButton=Button(master,text="Run",command=self.run)        
-        self.nextButton=Button(master,text="Next",command=self.next)
+        self.runButton=Button(master,text="Run",command=self.run,state='disabled')        
+        self.nextButton=Button(master,text="Next",command=self.next,state='disabled')
         self.runButton.grid(row=1,column=5,sticky=W)
         self.nextButton.grid(row=1,column=6)
 
@@ -175,6 +197,7 @@ class CombatManager():
         e=EntityFrame(self.frame,self)
         e.pack(padx=5,pady=5)
         self.entities.append(e)
+        return e
 
     def start(self):
         error=False
@@ -193,6 +216,9 @@ class CombatManager():
                     return
             else:
                 self.started=True
+                self.commandEntry['state']='normal'
+                self.runButton['state']='normal'
+                self.nextButton['state']='normal'
             #second pass
             for e in self.entities:
                 if e.player.get():
@@ -253,7 +279,7 @@ class CombatManager():
             try:
                 self.queue.delay(int(command[1]))
                 self.refresh()
-            except ValueError:
+            except (ValueError,IndexError):
                 messagebox.showwarning("Run",'Not a valid number.')
 
         elif (command[0]==commands[6] or command[0]==shortcuts[6]) and len(command)==1:
@@ -286,15 +312,27 @@ class CombatManager():
         self.text.insert(END,self.queue)
         self.text.config(state=DISABLED)
 
-    def loadplayers(self):
-        print('Coming soon')
+    def loadCallback(self):
+        filenames=filedialog.askopenfilenames()
+        for filename in filenames:
+            try:
+                f=open(filename,'r')
+                d=json.load(f)
+                f.close()
+                e=self.add()
+                e.fillIn(d)                
+            except OSError:
+                messagebox.showerror('Load','Could not open file '+filename)
+                e.destroyCallback()
+            except (KeyError,TypeError):
+                messagebox.showerror('Load','File '+filename+' not in correct format')
+                e.destroyCallback()
+                
+            
 
 
 master=Tk()
 master.title("Combat Manager")
 master.resizable(width=False,height=False)
 cm=CombatManager(master)
-cm.entities[0].fillIn('Mathias','10',2,True)
-cm.add()
-cm.entities[1].fillIn('Goblin','3d4+2',1,False)
 master.mainloop()

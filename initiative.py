@@ -7,7 +7,7 @@ import sys
 
 commands=['next','heal','damage','remove','restore','delay','help','stop']
 usage=['','n hp','n hp','n','n','n','command','']
-shortcuts=['n','h','da','rem','res','de','h','s']
+shortcuts=['n','he','da','rem','res','de','h','s']
 helpform='Usage: {} {}\nShortcut: {}\n{}'
 helpmessages=['Moves to next entity in the queue',
               'Heals entity with index n hp points',
