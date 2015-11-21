@@ -188,13 +188,13 @@ class CombatManager():
         
 
         #start, add and load buttons
-        self.startButton=Button(master,text="Start",command=self.start)
-        self.startButton.grid(row=1,column=0,sticky=W,padx=5,pady=5)
+        self.startButton=Button(master,text="Start",command=self.startCallback)
+        self.startButton.grid(row=1,column=0,sticky=EW,padx=5,pady=5)
 
         self.loadButton=Button(master,text="Load",command=self.loadEntityCallback)
-        self.loadButton.grid(row=1,column=1,sticky=W,padx=5,pady=5)
+        self.loadButton.grid(row=1,column=1,sticky=EW,padx=5,pady=5)
         
-        self.addButton=Button(master,text="+",command=self.add)
+        self.addButton=Button(master,text="+",command=self.addCallback)
         self.addButton.grid(row=1,column=2,sticky=E,padx=5,pady=5)
         
 
@@ -214,14 +214,14 @@ class CombatManager():
         Label(master,text="Command:").grid(row=1,column=3)
         
         self.commandEntry=Combobox(master,textvariable=self.command,state='disabled',postcommand=self.updateHistory)
-        self.commandEntry.bind('<Return>',self.run)
-        self.commandEntry.bind('<KP_Enter>',self.run)
+        self.commandEntry.bind('<Return>',self.runCallback)
+        self.commandEntry.bind('<KP_Enter>',self.runCallback)
         self.commandEntry.grid(row=1,column=4,sticky=W)
-        self.runButton=Button(master,text="Run",command=self.run,state='disabled')
+        self.runButton=Button(master,text="Run",command=self.runCallback,state='disabled')
         self.runButton.grid(row=1,column=5,sticky=W)
-        self.undoButton=Button(master,text="Undo",command=self.undo,state='disabled')
+        self.undoButton=Button(master,text="Undo",command=self.undoCallback,state='disabled')
         self.undoButton.grid(row=1,column=6)
-        self.nextButton=Button(master,text="Next",command=self.next,state='disabled')
+        self.nextButton=Button(master,text="Next",command=self.nextCallback,state='disabled')
         self.nextButton.grid(row=1,column=7)
         
     def configureCanvas(self,event):
@@ -231,7 +231,7 @@ class CombatManager():
         #use splicing to reverse list
         self.commandEntry.configure(values=['']+self.commandHistory[::-1])
 
-    def add(self):
+    def addCallback(self):
         e=EntityFrame(self.frame,self)
         e.pack(padx=5,pady=5)
         index=len(self.entities)+1
@@ -243,7 +243,7 @@ class CombatManager():
         for i in range(len(self.entities)):
             self.entities[i].index.set("#"+str(i+1))
 
-    def start(self):
+    def startCallback(self):
         error=False
         #two passes: one to check if any errors popped up, if not: one to actually make entities and append
         #entities
@@ -276,8 +276,9 @@ class CombatManager():
                             self.queue.append(Entity(e.name.get()+" "+str(i+1),e.bonus.get(),dice.getHealth(e.health.get()),dice.d20()))
             self.queue.sort()
             self.refresh()
-            
-    def run(self,event=None):
+
+    #run command in commandline
+    def runCallback(self,event=None):
         command=self.command.get()
         command=command.split()
         if len(command)==0:
@@ -285,7 +286,7 @@ class CombatManager():
         #usage: next
         #make the next active entity in the queue, the acting entity
         elif (command[0]==commands[0] or command[0]==shortcuts[0]) and len(command)==1:
-            self.next()
+            self.nextCallback()
         #usage: heal n hp
         #heals entity with index n hp points
         elif (command[0]==commands[1] or command[0]==shortcuts[1]) and len(command)==3:
@@ -340,6 +341,8 @@ class CombatManager():
                 for i in commands:
                     s+=i+'\n'
                 messagebox.showinfo("Help",s)
+        elif(command[0]==commands[7] or command[0]==shortcuts[7]) and len(command)==1:
+            self.exitCallback()
         else:
             messagebox.showwarning("Run",'Unknown Command or Wrong Syntax.')
         #check if there are any enemies left
@@ -349,18 +352,23 @@ class CombatManager():
         self.command.set('')
 
 
-    def next(self):
+    
+    def nextCallback(self):
         self.queue.incr()
         self.refresh()
 
-    def undo(self):
+    def undoCallback(self):
         pass
 
+    
+    #refresh display of entityqueue
     def refresh(self):
         self.text.config(state=NORMAL)
         self.text.delete(1.0,END)
         self.text.insert(END,self.queue)
         self.text.config(state=DISABLED)
+
+    #Menu items callback functions
 
     def loadEntityCallback(self):
         filenames=filedialog.askopenfilenames()
@@ -369,7 +377,7 @@ class CombatManager():
                 f=open(filename,'r')
                 d=json.load(f)
                 f.close()
-                e=self.add()
+                e=self.addCallback()
                 e.fillIn(d)                
             except OSError:
                 messagebox.showerror('Load Entity','Could not open file '+filename)
@@ -436,7 +444,8 @@ class CombatManager():
             
 
     def exitCallback(self):
-        master.destroy()
+        if messagebox.askyesno("Exit","Are you sure you want to exit?"):
+            master.destroy()
                 
             
 
