@@ -1,6 +1,8 @@
 from tkinter import *
 from tkinter import messagebox
 from tkinter import filedialog
+from tkinter.ttk import Combobox
+import tkinter.font
 from initiative import *
 import json
 
@@ -18,6 +20,7 @@ class EntityFrame(Frame):
         self.nameEntry.grid(row=0,column=1)
         #Health
         self.health=StringVar()
+        self.health.set("1")
         Label(self,text="Health:").grid(row=1,column=0,sticky=W)
         self.healthEntry=Entry(self,width=10,textvariable=self.health)
         self.healthEntry.grid(row=1,column=1,sticky=W)
@@ -26,6 +29,10 @@ class EntityFrame(Frame):
         Label(self,text="Bonus:").grid(row=2,column=0,sticky=W)
         self.bonusEntry=Entry(self,textvariable=self.bonus,width=4)
         self.bonusEntry.grid(row=2,column=1,sticky=W)
+        #Index
+        self.index=StringVar()
+        self.indexLabel=Label(self,textvariable=self.index)
+        self.indexLabel.grid(row=3,column=0,sticky=W)
         #Player
         self.player=BooleanVar()
         Label(self,text="Player:").grid(row=0,column=3,sticky=W)
@@ -80,6 +87,7 @@ class EntityFrame(Frame):
 
     def destroyCallback(self):
         self.combatmanager.entities.remove(self)
+        self.combatmanager.updateIndices()
         self.destroy()
 
     def fillIn(self,entity):
@@ -132,76 +140,112 @@ class CombatManager():
         self.entities=[]
         self.queue=EntityQueue()
         self.started=False
+        self.commandHistory=[]
         #Menu
         self.menubar=Menu(master)
         self.filemenu=Menu(self.menubar,tearoff=0)
-        self.filemenu.add_command(label="Load File",command=self.loadCallback)
-        self.menubar.add_cascade(label="Menu",menu=self.filemenu)
+        self.filemenu.add_command(label="Load Entity",command=self.loadEntityCallback)
+        self.filemenu.add_separator()
+        self.filemenu.add_command(label="Save Fight",command=self.saveFightCallback)
+        self.filemenu.add_command(label="Load Fight",command=self.loadFightCallback)
+        self.filemenu.add_separator()
+        self.filemenu.add_command(label="Exit",command=self.exitCallback)
         
+        self.menubar.add_cascade(label="Menu",menu=self.filemenu)        
         master.config(menu=self.menubar)
         
         #frame containing entities
         self.canvasframe=Frame(master)
-        self.canvasframe.grid(row=0,column=0,columnspan=2)
+        self.canvasframe.grid(row=0,column=0,columnspan=3)
 
         self.canvas=Canvas(self.canvasframe,highlightthickness=0)
         self.frame=Frame(self.canvas)
+        
+        #scrollbar
         self.scrollbar=Scrollbar(self.canvasframe,command=self.canvas.yview)
-        self.canvas.configure(yscrollcommand=self.scrollbar.set)
-
         self.scrollbar.grid(row=0,column=1,sticky=N+S+E)
+        self.canvas.configure(yscrollcommand=self.scrollbar.set)
+        
+
+        
+
+        #self.entities.append(EntityFrame(self.frame,self))
+        #self.entities[0].pack(padx=5,pady=5)
+        
         self.canvas.grid(row=0,column=0)
+        
+
+        
         self.canvas.create_window((0,0),window=self.frame,anchor='nw')
 
-        self.frame.bind("<Configure>",self.configureCanvas)
-        #workaround
+        #workaround used to activate scrollbar
+        self.frame.bind("<Configure>",self.configureCanvas)        
         self.configureCanvas(None)
 
         
-        #self.entities.append(EntityFrame(self.frame,self))
-        #self.entities[0].pack(padx=5,pady=5)
+        
 
         
 
-        #start and add buttons
+        #start, add and load buttons
         self.startButton=Button(master,text="Start",command=self.start)
-        self.addButton=Button(master,text="+",command=self.add)
         self.startButton.grid(row=1,column=0,sticky=W,padx=5,pady=5)
-        self.addButton.grid(row=1,column=1,sticky=E,padx=5,pady=5)
+
+        self.loadButton=Button(master,text="Load",command=self.loadEntityCallback)
+        self.loadButton.grid(row=1,column=1,sticky=W,padx=5,pady=5)
+        
+        self.addButton=Button(master,text="+",command=self.add)
+        self.addButton.grid(row=1,column=2,sticky=E,padx=5,pady=5)
+        
 
         #Text with scrollbar for displaying entityqueue
         self.textframe=Frame(master)
-        self.textframe.grid(columnspan=4,row=0,column=3)
+        self.textframe.grid(columnspan=5,row=0,column=3)
         self.textscrollbar=Scrollbar(self.textframe)
         self.textscrollbar.grid(row=0,column=1,sticky=N+S+E)
-        self.text=Text(self.textframe,width=40,state=DISABLED,yscrollcommand=self.textscrollbar.set)
+        textfont=tkinter.font.nametofont("TkFixedFont")
+        self.text=Text(self.textframe,width=35,state=DISABLED,yscrollcommand=self.textscrollbar.set,font=textfont.configure(size=14))
         self.text.grid(row=0,column=0)
         self.textscrollbar.config(command=self.text.yview)
         #self.text.grid(columnspan=4,row=0,column=3,padx=10,pady=10)
 
-        #command line, run and next buttons
+        #command line, run ,undo and next buttons
         self.command=StringVar()
         Label(master,text="Command:").grid(row=1,column=3)
-        self.commandEntry=Entry(master,textvariable=self.command,state='disabled')
+        
+        self.commandEntry=Combobox(master,textvariable=self.command,state='disabled',postcommand=self.updateHistory)
         self.commandEntry.bind('<Return>',self.run)
+        self.commandEntry.bind('<KP_Enter>',self.run)
         self.commandEntry.grid(row=1,column=4,sticky=W)
-        self.runButton=Button(master,text="Run",command=self.run,state='disabled')        
-        self.nextButton=Button(master,text="Next",command=self.next,state='disabled')
+        self.runButton=Button(master,text="Run",command=self.run,state='disabled')
         self.runButton.grid(row=1,column=5,sticky=W)
-        self.nextButton.grid(row=1,column=6)
-
+        self.undoButton=Button(master,text="Undo",command=self.undo,state='disabled')
+        self.undoButton.grid(row=1,column=6)
+        self.nextButton=Button(master,text="Next",command=self.next,state='disabled')
+        self.nextButton.grid(row=1,column=7)
+        
     def configureCanvas(self,event):
-        self.canvas.configure(scrollregion=self.canvas.bbox("all"),width=240,height=400)
+        self.canvas.configure(scrollregion=self.canvas.bbox("all"),width=300,height=400)
+
+    def updateHistory(self):
+        #use splicing to reverse list
+        self.commandEntry.configure(values=['']+self.commandHistory[::-1])
 
     def add(self):
         e=EntityFrame(self.frame,self)
         e.pack(padx=5,pady=5)
+        index=len(self.entities)+1
         self.entities.append(e)
+        e.index.set("#"+str(index))
         return e
+
+    def updateIndices(self):
+        for i in range(len(self.entities)):
+            self.entities[i].index.set("#"+str(i+1))
 
     def start(self):
         error=False
-        #two passes: one to check if any errors popped up, if not: one to actually make and append
+        #two passes: one to check if any errors popped up, if not: one to actually make entities and append
         #entities
         for e in self.entities:
             if e.hasError():
@@ -218,6 +262,7 @@ class CombatManager():
                 self.started=True
                 self.commandEntry['state']='normal'
                 self.runButton['state']='normal'
+                #self.undoButton['state']='normal'
                 self.nextButton['state']='normal'
             #second pass
             for e in self.entities:
@@ -300,11 +345,16 @@ class CombatManager():
         #check if there are any enemies left
         if self.queue.activeEnemies()==0 and self.started:
             messagebox.showinfo("Run",'All enemies defeated.')
+        self.commandHistory.append(self.command.get())
         self.command.set('')
+
 
     def next(self):
         self.queue.incr()
         self.refresh()
+
+    def undo(self):
+        pass
 
     def refresh(self):
         self.text.config(state=NORMAL)
@@ -312,7 +362,7 @@ class CombatManager():
         self.text.insert(END,self.queue)
         self.text.config(state=DISABLED)
 
-    def loadCallback(self):
+    def loadEntityCallback(self):
         filenames=filedialog.askopenfilenames()
         for filename in filenames:
             try:
@@ -322,11 +372,71 @@ class CombatManager():
                 e=self.add()
                 e.fillIn(d)                
             except OSError:
-                messagebox.showerror('Load','Could not open file '+filename)
+                messagebox.showerror('Load Entity','Could not open file '+filename)
                 e.destroyCallback()
             except (KeyError,TypeError):
-                messagebox.showerror('Load','File '+filename+' not in correct format')
+                messagebox.showerror('Load Entity','File '+filename+' not in correct format')
                 e.destroyCallback()
+
+    def saveFightCallback(self):
+        if self.started:
+            filename=filedialog.asksaveasfilename(defaultextension=".json")
+            if filename:
+                try:
+                    f=open(filename,'w')
+
+                    d=dict()
+                    d["position"]=self.queue.position
+                    d["round"]=self.queue.round
+                    #iterate over entities in EntityQueue and save their dictionary representation to a list
+                    l=[]
+                    for e in self.queue.queue:
+                        l.append(e.__dict__)
+                    d["queue"]=l
+                    json.dump(d,f)
+                    f.close()
+                    messagebox.showinfo("Save Fight","Fight saved as "+filename)
+                except OSError:
+                    messagebox.showerror("Save Fight","Could not save file")
+        else:
+            messagebox.showerror("Save Fight","No Active Fight")
+
+            
+            
+
+    def loadFightCallback(self):
+        if self.started:
+            if not messagebox.askyesno("Start","Are you sure you  want to restart combat? Progress will be lost."):
+                return
+        filename=filedialog.askopenfilename()
+        if filename:
+            try:
+                f=open(filename,'r')
+                d=json.load(f)
+                f.close()
+                self.queue.clear()
+                self.queue.position=d["position"]
+                self.queue.round=d["round"]
+                for e in d["queue"]:
+                    self.queue.append(Entity.fromDict(e))                    
+                self.queue.sort()
+                self.refresh()
+
+                self.started=True
+                self.commandEntry['state']='normal'
+                self.runButton['state']='normal'
+                #self.undoButton['state']='normal'
+                self.nextButton['state']='normal'
+            except OSError:
+                messagebox.showerror('Load Fight','Could not open file '+filename)                
+            except (KeyError,TypeError):
+                messagebox.showerror('Load Fight','File '+filename+' not in correct format')                
+
+                
+            
+
+    def exitCallback(self):
+        master.destroy()
                 
             
 

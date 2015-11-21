@@ -63,7 +63,8 @@ def makePlayerFile(file='players.json'):
 class Entity:
     formActive=" {:10} ({:2.0f}) {:2}/{:2} "
     formInactive="[{:10} ({:2.0f}) {:2}/{:2}]"
-    def __init__(self,name,bonus,maxHealth,roll,isPlayer=False):
+    #constructor
+    def __init__(self,name,bonus,maxHealth,roll,isPlayer=False):         
         self.active=True
         self.name=name
         self.bonus=bonus
@@ -74,6 +75,14 @@ class Entity:
             self.initiative=roll+bonus
         else:
             self.initiative=roll+bonus*1.001
+    #clas method for constructing using dict
+    @classmethod
+    def fromDict(cls,d):
+        e=cls(d["name"],d["bonus"],d["maxHealth"],0,d["isPlayer"])
+        e.active=d["active"]
+        e.health=d["health"]
+        e.initiative=d["initiative"]
+        return e
     def damage(self, damage):
         self.health=max(self.health-damage,0)
         if self.health==0:
@@ -90,12 +99,14 @@ class Entity:
 
 class EntityQueue:
     arrow="-->"
+    header=(len(arrow)+1)*' '+"Round {}\n\n"
     form="{} {:2}) {}\n"
     def __init__(self):
         self.queue=[]
         self.position=0
         self.length=0
         self.index=-1
+        self.round=0
     def append(self, entity):
         self.queue.append(entity)
         self.length+=1
@@ -111,9 +122,14 @@ class EntityQueue:
     #are considered. Loops back to begin
     def incr(self):
         if self.length!=0:
+            if not self.activeEnemies():
+                return
             done=False
-            while not done:        
-                self.position=(self.position+1)%self.length
+            while not done:
+                self.position+=1
+                if self.position==self.length:
+                    self.position=0
+                    self.round+=1
                 if self.queue[self.position].active:
                     done=True
     #returns the number of enemies currently active in the queue
@@ -139,6 +155,7 @@ class EntityQueue:
     #active entity is marked with arrow
     def __str__(self):
         s="\n"
+        s+=self.header.format(self.round+1)
         for i in range(self.length):
             s+=self.form.format(self.arrow if i==self.position else " "*len(self.arrow),i+1,self.queue[i])
         return s
