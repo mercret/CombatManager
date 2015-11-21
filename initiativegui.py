@@ -49,9 +49,14 @@ class EntityFrame(Frame):
         Label(self,text="Amount:").grid(row=2,column=3,sticky=W)
         self.amountSpinbox=Spinbox(self,textvariable=self.amount,from_=1,to=99,width=2)
         self.amountSpinbox.grid(row=2,column=4,sticky=E)
+        #Add to combat
+        self.addToCombatButton=Button(self,text="Add To Combat",command=self.addToCombatCallback)
+        if not self.combatmanager.started:
+            self.addToCombatButton['state']='disabled'
+        self.addToCombatButton.grid(row=3,column=1,sticky=EW,padx=5,pady=5)
         #Save
-        self.save=Button(self,text="Save",command=self.saveCallback)
-        self.save.grid(row=3,column=3,sticky=W,padx=5,pady=5)
+        self.saveButton=Button(self,text="Save",command=self.saveCallback)
+        self.saveButton.grid(row=3,column=3,sticky=W,padx=5,pady=5)
         #Destroy
         self.destroyButton=Button(self,text="x",command=self.destroyCallback)
         self.destroyButton.grid(row=3,column=4,sticky=E,padx=5,pady=5)
@@ -65,6 +70,18 @@ class EntityFrame(Frame):
             self.amountSpinbox["state"]="normal"
             self.rollEntry["state"]="disabled"
 
+    #returns a dict usable to save to json format
+    def toJson(self):
+        d=dict()
+        d['name']=self.name.get()
+        d['health']=self.health.get()
+        d['bonus']=self.bonus.get()
+        d['player']=self.player.get()
+        d['roll']=self.roll.get()
+        d['amount']=self.amount.get()
+        return d
+
+    #saves a general description of a type of entity to file
     def saveCallback(self):
         if self.name.get()=="":
             messagebox.showwarning("Save","No name given.")
@@ -72,11 +89,9 @@ class EntityFrame(Frame):
         try:
             filename=self.name.get()+".json"
             f=open(filename,'w')
-            d=dict()
-            d['name']=self.name.get()
-            d['health']=self.health.get()
-            d['bonus']=self.bonus.get()
-            d['player']=self.player.get()
+            d=self.toJson()
+            d['roll']=0
+            d['amount']=1
             json.dump(d,f)
             f.close()
             messagebox.showinfo("Save","Entity saved as "+filename)
@@ -90,12 +105,18 @@ class EntityFrame(Frame):
         self.combatmanager.updateIndices()
         self.destroy()
 
+    def addToCombatCallback(self):
+        self.combatmanager.addToEntityQueue(self)
+
     def fillIn(self,entity):
         self.name.set(entity['name'])
         self.health.set(entity['health'])
         self.bonus.set(entity['bonus'])
         self.player.set(entity['player'])
         self.playerCheckboxCallback()
+
+    def setIndex(self, index):
+        self.index.set("#"+str(index+1))
 
     def hasError(self):
         error=False
@@ -155,43 +176,32 @@ class CombatManager():
         master.config(menu=self.menubar)
         
         #frame containing entities
-        self.canvasframe=Frame(master)
-        self.canvasframe.grid(row=0,column=0,columnspan=3)
+        self.canvasframe=Frame(master,borderwidth=2,relief=RIDGE)
+        self.canvasframe.grid(row=0,column=0,columnspan=3,sticky='nsew')
+        self.canvasframe.rowconfigure(0,weight=1)
 
         self.canvas=Canvas(self.canvasframe,highlightthickness=0)
         self.frame=Frame(self.canvas)
         
         #scrollbar
         self.scrollbar=Scrollbar(self.canvasframe,command=self.canvas.yview)
-        self.scrollbar.grid(row=0,column=1,sticky=N+S+E)
+        self.scrollbar.grid(row=0,column=1,sticky='nse')
         self.canvas.configure(yscrollcommand=self.scrollbar.set)
         
-
-        
-
-        #self.entities.append(EntityFrame(self.frame,self))
-        #self.entities[0].pack(padx=5,pady=5)
-        
-        self.canvas.grid(row=0,column=0)
-        
-
-        
+        self.canvas.grid(row=0,column=0,sticky='nsew')       
         self.canvas.create_window((0,0),window=self.frame,anchor='nw')
+        self.frame.bind("<Configure>",self.configureCanvas)
 
-        #workaround used to activate scrollbar
-        self.frame.bind("<Configure>",self.configureCanvas)        
-        self.configureCanvas(None)
-
-        
-        
-
-        
+        #mousewheel events
+        self.canvas.bind("<MouseWheel>",lambda event: self.canvas.yview('scroll',-1*(event.delta/120),'units'))
+        self.canvas.bind("<Button-4>",lambda event: self.canvas.yview('scroll',-1,'units'))
+        self.canvas.bind("<Button-5>",lambda event: self.canvas.yview('scroll',1,'units'))                       
 
         #start, add and load buttons
         self.startButton=Button(master,text="Start",command=self.startCallback)
         self.startButton.grid(row=1,column=0,sticky=EW,padx=5,pady=5)
 
-        self.loadButton=Button(master,text="Load",command=self.loadEntityCallback)
+        self.loadButton=Button(master,text="Load Entity",command=self.loadEntityCallback)
         self.loadButton.grid(row=1,column=1,sticky=EW,padx=5,pady=5)
         
         self.addButton=Button(master,text="+",command=self.addCallback)
@@ -204,10 +214,9 @@ class CombatManager():
         self.textscrollbar=Scrollbar(self.textframe)
         self.textscrollbar.grid(row=0,column=1,sticky=N+S+E)
         textfont=tkinter.font.nametofont("TkFixedFont")
-        self.text=Text(self.textframe,width=35,state=DISABLED,yscrollcommand=self.textscrollbar.set,font=textfont.configure(size=14))
+        self.text=Text(self.textframe,width=40,state=DISABLED,yscrollcommand=self.textscrollbar.set,font=textfont.configure(size=14))
         self.text.grid(row=0,column=0)
         self.textscrollbar.config(command=self.text.yview)
-        #self.text.grid(columnspan=4,row=0,column=3,padx=10,pady=10)
 
         #command line, run ,undo and next buttons
         self.command=StringVar()
@@ -225,7 +234,7 @@ class CombatManager():
         self.nextButton.grid(row=1,column=7)
         
     def configureCanvas(self,event):
-        self.canvas.configure(scrollregion=self.canvas.bbox("all"),width=300,height=400)
+        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
 
     def updateHistory(self):
         #use splicing to reverse list
@@ -234,14 +243,48 @@ class CombatManager():
     def addCallback(self):
         e=EntityFrame(self.frame,self)
         e.pack(padx=5,pady=5)
-        index=len(self.entities)+1
+        index=len(self.entities)
         self.entities.append(e)
-        e.index.set("#"+str(index))
+        e.setIndex(index)
         return e
 
     def updateIndices(self):
         for i in range(len(self.entities)):
-            self.entities[i].index.set("#"+str(i+1))
+            self.entities[i].setIndex(i)
+            
+    #enables certain widgets on start
+    def enableWidgetsOnStart(self):
+        self.commandEntry['state']='normal'
+        self.runButton['state']='normal'
+        #self.undoButton['state']='normal'
+        self.nextButton['state']='normal'
+        for ef in self.entities:
+            ef.addToCombatButton['state']='normal'
+        
+    #disables certain widgets on stop (currently not used)
+    def disableWidgetsOnStop(self):
+        self.commandEntry['state']='disabled'
+        self.runButton['state']='disabled'
+        #self.undoButton['state']='disabled'
+        self.nextButton['state']='disabled'
+        for ef in entities:
+            ef.addToCombatButton['state']='disabled'
+
+    def addToEntityQueue(self,e):
+        if e.hasError():
+            messagebox.showwarning("Add Entity","One or more entries contain errors.")
+            return
+        if e.player.get():
+            self.queue.append(Entity(e.name.get(),e.bonus.get(),dice.getHealth(e.health.get()),e.roll.get(),True))
+        else:
+            if e.amount.get()==1:
+                self.queue.append(Entity(e.name.get(),e.bonus.get(),dice.getHealth(e.health.get()),dice.d20()))
+            else:
+                for i in range(e.amount.get()):
+                    self.queue.append(Entity(e.name.get()+" "+str(i+1),e.bonus.get(),dice.getHealth(e.health.get()),dice.d20()))
+        self.queue.sort()
+        self.refresh()
+            
 
     def startCallback(self):
         error=False
@@ -260,22 +303,10 @@ class CombatManager():
                     return
             else:
                 self.started=True
-                self.commandEntry['state']='normal'
-                self.runButton['state']='normal'
-                #self.undoButton['state']='normal'
-                self.nextButton['state']='normal'
+                self.enableWidgetsOnStart()
             #second pass
             for e in self.entities:
-                if e.player.get():
-                    self.queue.append(Entity(e.name.get(),e.bonus.get(),dice.getHealth(e.health.get()),e.roll.get(),True))
-                else:
-                    if e.amount.get()==1:
-                        self.queue.append(Entity(e.name.get(),e.bonus.get(),dice.getHealth(e.health.get()),dice.d20()))
-                    else:
-                        for i in range(e.amount.get()):
-                            self.queue.append(Entity(e.name.get()+" "+str(i+1),e.bonus.get(),dice.getHealth(e.health.get()),dice.d20()))
-            self.queue.sort()
-            self.refresh()
+                self.addToEntityQueue(e)
 
     #run command in commandline
     def runCallback(self,event=None):
@@ -397,20 +428,22 @@ class CombatManager():
                     d["position"]=self.queue.position
                     d["round"]=self.queue.round
                     #iterate over entities in EntityQueue and save their dictionary representation to a list
-                    l=[]
+                    entitiesList=[]
                     for e in self.queue.queue:
-                        l.append(e.__dict__)
-                    d["queue"]=l
+                        entitiesList.append(e.__dict__)
+                    d["queue"]=entitiesList
+                    #iterate over EntityFrames and save their dictionary representation to a list
+                    entityFramesList=[]
+                    for ef in self.entities:
+                        entityFramesList.append(ef.toJson())
+                    d["frames"]=entityFramesList
                     json.dump(d,f)
                     f.close()
                     messagebox.showinfo("Save Fight","Fight saved as "+filename)
                 except OSError:
                     messagebox.showerror("Save Fight","Could not save file")
         else:
-            messagebox.showerror("Save Fight","No Active Fight")
-
-            
-            
+            messagebox.showerror("Save Fight","No Active Fight")                        
 
     def loadFightCallback(self):
         if self.started:
@@ -426,22 +459,19 @@ class CombatManager():
                 self.queue.position=d["position"]
                 self.queue.round=d["round"]
                 for e in d["queue"]:
-                    self.queue.append(Entity.fromDict(e))                    
+                    self.queue.append(Entity.fromDict(e))
                 self.queue.sort()
                 self.refresh()
+                for ef in d["frames"]:
+                    e=self.addCallback()
+                    e.fillIn(ef)
 
                 self.started=True
-                self.commandEntry['state']='normal'
-                self.runButton['state']='normal'
-                #self.undoButton['state']='normal'
-                self.nextButton['state']='normal'
+                self.enableWidgetsOnStart()
             except OSError:
                 messagebox.showerror('Load Fight','Could not open file '+filename)                
             except (KeyError,TypeError):
-                messagebox.showerror('Load Fight','File '+filename+' not in correct format')                
-
-                
-            
+                messagebox.showerror('Load Fight','File '+filename+' not in correct format')                        
 
     def exitCallback(self):
         if messagebox.askyesno("Exit","Are you sure you want to exit?"):

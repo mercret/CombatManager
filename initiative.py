@@ -61,8 +61,8 @@ def makePlayerFile(file='players.json'):
 
 #represents an entity in combat, player or enemy
 class Entity:
-    formActive=" {:10} ({:2.0f}) {:2}/{:2} "
-    formInactive="[{:10} ({:2.0f}) {:2}/{:2}]"
+    formActive=" {:15} ({:2.0f}) {:2}/{:2} "
+    formInactive="[{:15} ({:2.0f}) {:2}/{:2}]"
     #constructor
     def __init__(self,name,bonus,maxHealth,roll,isPlayer=False):         
         self.active=True
