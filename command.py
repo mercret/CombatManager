@@ -110,10 +110,35 @@ class CommandHistory:
 
     def __init__(self):
         self.history=[]
-        self.position=0
+        self.position=-1
 
     def append(self,command):
-        self.history.append(command)
         self.position+=1
+        if self.position!=len(self.history):
+            self.history[self.position:]=[]
+        self.history.append(command)
+        #print("{}/{}".format(self.position,len(self.history)))
+
+    def undo(self):
+        if self.position >= 0:
+            self.history[self.position].undo()
+            self.position-=1
+        #print("{}/{}".format(self.position,len(self.history)))
+
+    def redo(self):
+        if self.position+1 < len(self.history):
+            self.position+=1
+            self.history[self.position].execute()
+        #print("{}/{}".format(self.position,len(self.history)))
+
+    def clear(self):
+        self.history=[]
+        self.position=-1
+
+    def atBegin(self):
+        return self.position==-1
+
+    def atEnd(self):
+        return self.position+1==len(self.history)
 
         

@@ -313,7 +313,7 @@ class CombatManager(Tk):
 
         #Text with scrollbar for displaying entityqueue
         self.textframe=Frame(self)
-        self.textframe.grid(columnspan=5,row=0,column=4)
+        self.textframe.grid(columnspan=6,row=0,column=4)
         self.textscrollbar=Scrollbar(self.textframe)
         self.textscrollbar.grid(row=0,column=1,sticky=N+S+E)
         textfont=tkinter.font.nametofont("TkFixedFont")
@@ -321,7 +321,7 @@ class CombatManager(Tk):
         self.text.grid(row=0,column=0)
         self.textscrollbar.config(command=self.text.yview)
 
-        #command line, run ,undo and next buttons
+        #command line, run ,undo, redo and next buttons
         self.commandstring=StringVar()
         Label(self,text="Command:").grid(row=1,column=4)
         
@@ -333,8 +333,10 @@ class CombatManager(Tk):
         self.runButton.grid(row=1,column=6,sticky=EW)
         self.undoButton=Button(self,text="Undo",command=self.undoCallback,state='disabled')
         self.undoButton.grid(row=1,column=7,sticky=EW)
+        self.redoButton=Button(self,text="Redo",command=self.redoCallback,state='disabled')
+        self.redoButton.grid(row=1,column=8,sticky=EW)
         self.nextButton=Button(self,text="Next",command=self.nextCallback,state='disabled')
-        self.nextButton.grid(row=1,column=8,sticky=EW)
+        self.nextButton.grid(row=1,column=9,sticky=EW)
 
         
     def configureCanvas(self,event):
@@ -360,7 +362,8 @@ class CombatManager(Tk):
     def enableWidgetsOnStart(self):
         self.commandEntry['state']='normal'
         self.runButton['state']='normal'
-        self.undoButton['state']='normal'
+        #self.undoButton['state']='normal'
+        #self.redoButton['state']='normal'
         self.nextButton['state']='normal'
         for ef in self.entities:
             if not ef.player.get():
@@ -373,6 +376,7 @@ class CombatManager(Tk):
         self.commandEntry['state']='disabled'
         self.runButton['state']='disabled'
         self.undoButton['state']='disabled'
+        self.redoButton['state']='disabled'
         self.nextButton['state']='disabled'
         for ef in self.entities:
             if not ef.player.get():
@@ -445,7 +449,10 @@ class CombatManager(Tk):
                 self.started=True
 
     def nextCallback(self):
-        self.queue.incr()
+        command=NextCommand(self.queue)
+        command.execute()
+        self.commandhistory.append(command)
+        self.checkCommandHistory()
         self.refreshDisplay()
 
     def runCallback(self,event=None):
@@ -517,9 +524,10 @@ class CombatManager(Tk):
         #execute command
         if command is not None:
             try:
-                command.execute()
+                command.execute()                
                 self.refreshDisplay()
                 self.commandhistory.append(command)
+                self.checkCommandHistory()
                 self.textcommandhistory.append(self.commandstring.get())
                 self.commandstring.set('')
             except IndexError:
@@ -530,8 +538,26 @@ class CombatManager(Tk):
                 messagebox.showinfo("Run",'All enemies defeated.')
 
     def undoCallback(self):
-        messagebox.showwarning("Undo","Work In Progress")
+        self.commandhistory.undo()
+        self.checkCommandHistory()
+        self.refreshDisplay()
 
+    def redoCallback(self):
+        self.commandhistory.redo()
+        self.checkCommandHistory()
+        self.refreshDisplay()
+
+    def checkCommandHistory(self):
+        #disable undo if at begin of commandhistory
+        if self.commandhistory.atBegin():
+            self.undoButton['state']='disabled'
+        else:
+            self.undoButton['state']='normal'
+        #disable redo if at end of commandhistory
+        if self.commandhistory.atEnd():
+            self.redoButton['state']='disabled'
+        else:
+            self.redoButton['state']='normal'
     
     #refresh display of entityqueue
     def refreshDisplay(self):
@@ -565,6 +591,7 @@ class CombatManager(Tk):
 
     def clearCallback(self):
         self.queue.clear()
+        self.commandhistory.clear()
         self.clearDisplay()
         for e in self.entities:
             e.destroy()
