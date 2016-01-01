@@ -1,34 +1,28 @@
 #helper functions concerning dice
 
+from enum import Enum
 import random
 import re
-pattern1=re.compile("^([0-9]*)d(4|6|8|10|12|20|100)((\+|\-)[0-9]*)?$")
+pattern1=re.compile("^([0-9]*)(d4|d6|d8|d10|d12|d20|d100)((\+|\-)[0-9]*)?$")
 pattern2=re.compile("^[1-9][0-9]*$")
 
-#roll a dice between 1-max
-def diceThrow(maximum):
-    return random.randrange(1,maximum+1)
+class Dice(Enum):
+    d4=4
+    d6=6
+    d8=8
+    d10=10
+    d12=12
+    d20=20
+    d100=100
 
-def d4():
-    return diceThrow(4)
+    def roll(self):
+        if self.value==100:
+            return 10*random.randrange(1,11)
+        else:
+            return random.randrange(1,self.value+1)
 
-def d6():
-    return diceThrow(6)
-
-def d8():
-    return diceThrow(8)
-
-def d10():
-    return diceThrow(10)
-
-def d12():
-    return diceThrow(12)
-
-def d20():
-    return diceThrow(20)
-
-def d100():
-    return 10*d10()
+    def isRoll(self,roll):
+        return roll>0 and roll<=self.value
 
 def isHealth(string):
     return pattern1.match(string)!=None or pattern2.match(string)!=None
@@ -38,7 +32,7 @@ def getHealth(string):
         spl=pattern1.split(string)[1:-2]
         if spl==[]:
             raise ValueError("Wrong syntax")
-        dice=int(spl[1])
+        dice=spl[1]
         if spl[0]=='':
             throws=1
         else:
@@ -49,7 +43,7 @@ def getHealth(string):
             mod=int(spl[2])
         health=0
         for i in range(throws):
-            health+=diceThrow(dice)
+            health+=Dice[dice].roll()
         return health+mod
     if pattern2.match(string):
         return int(string)

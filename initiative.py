@@ -71,10 +71,13 @@ class Entity:
         self.maxHealth=maxHealth
         self.health=maxHealth
         self.isPlayer=isPlayer
-        if isPlayer:
-            self.initiative=roll+bonus
+        self.roll=roll
+        self.updateinitiative()
+    def updateinitiative(self):
+        if self.isPlayer:
+            self.initiative=self.roll+self.bonus
         else:
-            self.initiative=roll+bonus*1.001
+            self.initiative=self.roll+self.bonus*1.001
     #clas method for constructing using dict
     @classmethod
     def fromDict(cls,d):
@@ -107,6 +110,11 @@ class EntityQueue:
         self.length=0
         self.index=-1
         self.round=0
+    def get(self,pos=-1):
+        if pos==-1:
+            return self.queue[self.position]
+        else:
+            return self.queue[pos-1]
     def append(self, entity):
         self.queue.append(entity)
         self.length+=1
@@ -115,6 +123,7 @@ class EntityQueue:
         self.position=0
         self.length=0
         self.index=-1
+        self.round=0
     #sorts the queue on the initiative of entities, in descending order
     def sort(self):
         self.queue.sort(key=lambda x:x.initiative,reverse=True)
