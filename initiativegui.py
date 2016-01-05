@@ -5,7 +5,7 @@ from tkinter.ttk import Combobox
 import tkinter.font
 
 from initiative import *
-from command import *
+from initiativecommands import *
 import json
 
 class EntityFrame(Frame):
@@ -324,7 +324,6 @@ class CombatManager(Tk):
         #command line, run ,undo, redo and next buttons
         self.commandstring=StringVar()
         Label(self,text="Command:").grid(row=1,column=4)
-        
         self.commandEntry=Combobox(self,textvariable=self.commandstring,state='disabled',postcommand=self.updateHistory)
         self.commandEntry.bind('<Return>',self.runCallback)
         self.commandEntry.bind('<KP_Enter>',self.runCallback)
@@ -338,6 +337,10 @@ class CombatManager(Tk):
         self.nextButton=Button(self,text="Next",command=self.nextCallback,state='disabled')
         self.nextButton.grid(row=1,column=9,sticky=EW)
 
+        #General Key Bindings
+        self.bind('<Control-q>',self.exitCallback)
+        self.bind('<Control-z>',self.undoCallback)
+        self.bind('<Control-Z>',self.redoCallback)
         
     def configureCanvas(self,event):
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
@@ -395,17 +398,22 @@ class CombatManager(Tk):
             return
         else:
             i=0
+            entities=[]
             for j in range(e.amount.get()):
                 if e.amount.get()==1:
                     name=e.name.get()
                 else:
                     name=e.name.get()+' '+str(j+1)
-                self.queue.append(Entity(name,e.bonus.get(),dice.getHealth(e.health.get()),rd.rolls[i],e.player.get()))
+                entities.append(Entity(name,e.bonus.get(),dice.getHealth(e.health.get()),rd.rolls[i],e.player.get()))
                 i+=1
                     
-                        
-            self.queue.sort()
+
+            command=AddCommand(self.queue,entities)
+            command.execute()
             self.refreshDisplay()
+            self.commandhistory.append(command)
+            self.checkCommandHistory()
+            
             
 
     def startCallback(self):
@@ -537,15 +545,17 @@ class CombatManager(Tk):
             if self.queue.activeEnemies()==0 and self.started:
                 messagebox.showinfo("Run",'All enemies defeated.')
 
-    def undoCallback(self):
-        self.commandhistory.undo()
-        self.checkCommandHistory()
-        self.refreshDisplay()
+    def undoCallback(self,event=None):
+        if self.started:
+            self.commandhistory.undo()
+            self.checkCommandHistory()
+            self.refreshDisplay()
 
-    def redoCallback(self):
-        self.commandhistory.redo()
-        self.checkCommandHistory()
-        self.refreshDisplay()
+    def redoCallback(self,event=None):
+        if self.started:
+            self.commandhistory.redo()
+            self.checkCommandHistory()
+            self.refreshDisplay()
 
     def checkCommandHistory(self):
         #disable undo if at begin of commandhistory
@@ -653,7 +663,7 @@ class CombatManager(Tk):
             except (KeyError,TypeError):
                 messagebox.showerror('Load Fight','File '+filename+' not in correct format')                        
 
-    def exitCallback(self):
+    def exitCallback(self,event=None):
         if messagebox.askyesno("Exit","Are you sure you want to exit?"):
             self.destroy()
 

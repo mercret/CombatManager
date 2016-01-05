@@ -118,6 +118,12 @@ class EntityQueue:
     def append(self, entity):
         self.queue.append(entity)
         self.length+=1
+    def remove(self,entity):
+        try:
+            self.queue.remove(entity)
+            self.length-=1
+        except ValueError:
+            pass
     def clear(self):
         self.queue=[]
         self.position=0
@@ -152,7 +158,7 @@ class EntityQueue:
         self.queue[pos-1].heal(hp)
     def damage(self,pos,hp):
         self.queue[pos-1].damage(hp)
-    def remove(self,pos):
+    def withdraw(self,pos):
         self.queue[pos-1].active=False
     def restore(self,pos):
         self.queue[pos-1].active=True

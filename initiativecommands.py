@@ -36,14 +36,12 @@ class HealCommand(Command):
         Command.__init__(self,entityqueue)
         self.pos=pos
         self.hp=hp
-        self.prevhealth=0
 
     def execute(self):
-        self.prevhealth=self.entityqueue.get(self.pos).health
         self.entityqueue.heal(self.pos,self.hp)
 
     def undo(self):
-        self.entityqueue.get(self.pos).health=self.prevhealth
+        self.entityqueue.damage(self.pos,self.hp)
 
 class DamageCommand(Command):
 
@@ -51,14 +49,12 @@ class DamageCommand(Command):
         Command.__init__(self,entityqueue)
         self.pos=pos
         self.hp=hp
-        self.prevhealth=0
 
     def execute(self):
-        self.prevhealth=self.entityqueue.get(self.pos).health
         self.entityqueue.damage(self.pos,self.hp)
 
     def undo(self):
-        self.entityqueue.get(self.pos).health=self.prevhealth
+        self.entityqueue.heal(self.pos,self.hp)
     
 class RemoveCommand(Command):
 
@@ -69,7 +65,7 @@ class RemoveCommand(Command):
 
     def execute(self):
         self.prevactive=self.entityqueue.get(self.pos).active
-        self.entityqueue.remove(self.pos)
+        self.entityqueue.withdraw(self.pos)
 
     def undo(self):
         self.entityqueue.get(self.pos).active=self.prevactive
@@ -104,6 +100,22 @@ class DelayCommand(Command):
     def undo(self):
         self.entity.initiative=self.previnit
         #order may have changed
+        self.entityqueue.sort()
+
+class AddCommand(Command):
+
+    def __init__(self,entityqueue,entities):
+        Command.__init__(self,entityqueue)
+        self.entities=entities
+
+    def execute(self):
+        for e in self.entities:
+            self.entityqueue.append(e)
+        self.entityqueue.sort()
+
+    def undo(self):
+        for e in self.entities:
+            self.entityqueue.remove(e)
         self.entityqueue.sort()
 
 class CommandHistory:
