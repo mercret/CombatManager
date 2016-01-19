@@ -7,246 +7,11 @@ import tkinter.font
 from initiative import *
 from initiativecommands import *
 import json
+import os
 
-class EntityFrame(Frame):
-
-    def __init__(self,master,combatmanager):
-        Frame.__init__(self,master)        
-        self['bd']=1
-        self['relief']='groove'
-        self.master=master
-        self.combatmanager=combatmanager
-        #Name
-        self.name=StringVar()
-        Label(self,text="Name:").grid(row=0,column=0,sticky=W)
-        self.nameEntry=Entry(self,width=15,textvariable=self.name)
-        self.nameEntry.grid(row=0,column=1)
-        #Health
-        self.health=StringVar()
-        self.health.set("1")
-        Label(self,text="Health:").grid(row=1,column=0,sticky=W)
-        self.healthEntry=Entry(self,width=10,textvariable=self.health)
-        self.healthEntry.grid(row=1,column=1,sticky=W)
-        #Bonus
-        self.bonus=IntVar()
-        Label(self,text="Bonus:").grid(row=2,column=0,sticky=W)
-        self.bonusEntry=Entry(self,textvariable=self.bonus,width=4)
-        self.bonusEntry.grid(row=2,column=1,sticky=W)
-        #Index
-        self.index=StringVar()
-        self.indexLabel=Label(self,textvariable=self.index)
-        self.indexLabel.grid(row=3,column=0,sticky=W)
-        #Player
-        self.player=BooleanVar()
-        Label(self,text="Player:").grid(row=0,column=3,sticky=W)
-        self.playerCheckbutton=Checkbutton(self,variable=self.player,command=self.playerCheckboxCallback)        
-        self.playerCheckbutton.grid(row=0,column=4,sticky=W)
-        #Autoroll
-        self.autoroll=BooleanVar()
-        self.autoroll.set(True)
-        Label(self,text="Auto Roll:").grid(row=1,column=3,sticky=W)
-        self.autorollCheckbutton=Checkbutton(self,variable=self.autoroll)
-        self.autorollCheckbutton.grid(row=1,column=4,sticky=W)
-        #Amount
-        self.amount=IntVar()
-        self.amount.set(1)
-        Label(self,text="Amount:").grid(row=2,column=3,sticky=W)
-        self.amountSpinbox=Spinbox(self,textvariable=self.amount,from_=1,to=99,width=2)
-        self.amountSpinbox.grid(row=2,column=4,sticky=E)
-        #Add to combat
-        self.addToCombatButton=Button(self,text="Add To Combat",command=self.addToCombatCallback)
-        if not self.combatmanager.started:
-            self.addToCombatButton['state']='disabled'
-        self.addToCombatButton.grid(row=3,column=1,sticky=EW,padx=5,pady=5)
-        #Save
-        self.saveButton=Button(self,text="Save",command=self.saveCallback)
-        self.saveButton.grid(row=3,column=3,sticky=W,padx=5,pady=5)
-        #Destroy
-        self.destroyButton=Button(self,text="x",command=self.destroyCallback)
-        self.destroyButton.grid(row=3,column=4,sticky=E,padx=5,pady=5)
-
-    def playerCheckboxCallback(self):
-        if(self.player.get()):
-            self.amount.set(1)
-            self.autoroll.set(False)
-            self.amountSpinbox["state"]="disabled"
-            self.autorollCheckbutton["state"]="disabled"
-        else:
-            self.amountSpinbox["state"]="normal"
-            self.autorollCheckbutton["state"]="normal"
-
-    #returns a dict usable to save to json format
-    def toJson(self):
-        d=dict()
-        d['name']=self.name.get()
-        d['health']=self.health.get()
-        d['bonus']=self.bonus.get()
-        d['player']=self.player.get()
-        d['autoroll']=self.autoroll.get()
-        d['amount']=self.amount.get()
-        return d
-
-    #saves a general description of a type of entity to file
-    def saveCallback(self):
-        if self.name.get()=="":
-            messagebox.showwarning("Save","No name given.")
-            return
-        try:
-            filename=self.name.get()+".json"
-            f=open(filename,'w')
-            d=self.toJson()
-            d['amount']=1
-            json.dump(d,f)
-            f.close()
-            messagebox.showinfo("Save","Entity saved as "+filename)
-        except OSError:
-            messagebox.showerror("Save","Could not save file")
-            
-            
-
-    def destroyCallback(self):
-        self.combatmanager.entities.remove(self)
-        self.combatmanager.updateIndices()
-        self.destroy()
-
-    def addToCombatCallback(self):
-        self.combatmanager.addToCombat(self)
-
-    def fillIn(self,entity):
-        self.name.set(entity['name'])
-        self.health.set(entity['health'])
-        self.bonus.set(entity['bonus'])
-        self.player.set(entity['player'])
-        self.autoroll.set(entity['autoroll'])
-        self.amount.set(entity['amount'])
-        self.playerCheckboxCallback()
-
-    def setIndex(self, index):
-        self.index.set("#"+str(index+1))
-
-    def hasError(self):
-        error=False
-        #health
-        if dice.isHealth(self.health.get()):
-            self.healthEntry['background']='white'
-        else:
-            error=True
-            self.healthEntry['background']='red'                
-        #bonus
-        try:                
-            self.bonus.get()
-            self.bonusEntry['background']='white'
-        except (ValueError,TclError):
-            error=True
-            self.bonusEntry['background']='red'
-        #player
-        if not self.player.get():
-            #amount
-            try:
-                self.amount.get()
-                self.amountSpinbox['background']='white'
-            except (ValueError,TclError):
-                error=True
-                self.amountSpinbox['background']='red'
-        return error
-        
-class RollDialog(Toplevel):
-
-    def __init__(self,master,entities):
-        Toplevel.__init__(self,master)
-        self.title("Insert Rolls")
-        self.transient(master)
-
-        self.frame=Frame(self)
-        #header
-        Label(self.frame,text='Name',font="-weight bold").grid(row=0,column=0,padx=5,pady=5)
-        Label(self.frame,text='Roll',font="-weight bold").grid(row=0,column=1,padx=5,pady=5)
-        Label(self.frame,text='Bonus',font="-weight bold").grid(row=0,column=2,columnspan=2,padx=5,pady=5)
-        Label(self.frame,text='Initiative',font="-weight bold").grid(row=0,column=4,columnspan=2,padx=5,pady=5)
-        #body
-        #show info from given entityframes, roll dice if auto, ask for roll if not
-        self.focus=None
-        self.rolls=None
-        self.rollvars=[]
-        i=0
-        for e in entities:
-            for j in range(e.amount.get()):
-                #list of roll, bonus, initiative
-                self.rollvars.append([IntVar() for k in range(3)])
-                self.rollvars[i][0].trace('w',lambda name,index,mode,i=i:self.updateInitiative(i))
-                self.rollvars[i][1].set(e.bonus.get())
-                if e.amount.get()==1:
-                    name=e.name.get()
-                else:
-                    name=e.name.get()+' '+str(j+1)
-                Label(self.frame,text=name,width=10).grid(row=i+1,column=0,sticky=W,padx=5,pady=5)               
-                if e.autoroll.get():
-                    self.rollvars[i][0].set(dice.Dice.d20.roll())
-                    Label(self.frame,textvariable=self.rollvars[i][0]).grid(row=i+1,column=1,sticky=E,padx=5,pady=5)
-                else:
-                    self.rollvars[i][2].set(self.rollvars[i][1].get())
-                    entry=Entry(self.frame,textvariable=self.rollvars[i][0],width=2)
-                    entry.grid(row=i+1,column=1,sticky=E,padx=5,pady=5)
-                    if self.focus==None:
-                        self.focus=entry
-                #sign
-                Label(self.frame,text='+').grid(row=i+1,column=2)
-                #bonus
-                Label(self.frame,textvariable=self.rollvars[i][1]).grid(row=i+1,column=3)
-                Label(self.frame,text="=").grid(row=i+1,column=4)
-                #result: initiative
-                Label(self.frame,textvariable=self.rollvars[i][2]).grid(row=i+1,column=5)                
-                i+=1
-
-        #ok and cancel button in seperate frame
-        buttonframe=Frame(self)
-        self.okButton=Button(buttonframe,text="OK",command=self.okCallback)
-        self.okButton.grid(row=0,column=0,sticky=EW,padx=5,pady=5)
-        self.cancelButton=Button(buttonframe,text="Cancel",command=self.cancelCallback)
-        self.cancelButton.grid(row=0,column=1,sticky=EW,padx=5,pady=5)
-
-        #bind return and keypad enter key to ok
-        self.bind("<Return>",self.okCallback)
-        self.bind('<KP_Enter>',self.okCallback)
-
-        self.frame.pack(padx=5,pady=5,fill='both',expand=1)
-        buttonframe.pack(padx=5,pady=5)
-
-
-        #disable parent window
-        self.grab_set()
-
-        #set focus
-        if self.focus!=None:
-            self.focus.focus()
-            self.focus.selection_to(END)
-        self.wait_window(self)        
-
-    def okCallback(self,event=None):
-        #validate
-        for r in self.rollvars:
-            try:
-                r[0].get()
-                if not dice.Dice.d20.isRoll(r[0].get()):
-                    raise ValueError
-            except (TclError, ValueError):
-                self.focus.focus()
-                self.focus.selection_to(END)
-                return
-        self.withdraw()
-        self.update_idletasks()
-        self.rolls=[r[0].get() for r in self.rollvars]
-        self.cancelCallback()
-
-    def cancelCallback(self):
-        self.master.focus_set()
-        self.destroy()
-
-    def updateInitiative(self,i):
-        try:
-            self.rollvars[i][2].set(self.rollvars[i][0].get()+self.rollvars[i][1].get())
-        except (ValueError,TclError):
-            pass
+from entityframe import EntityFrame
+from rolldialog import RollDialog
+from settingsdialog import SettingsDialog
 
 class CombatManager(Tk):
 
@@ -261,16 +26,20 @@ class CombatManager(Tk):
         self.commandhistory=CommandHistory()
         #Menu
         self.menubar=Menu(self)
+        #File Menu
         self.filemenu=Menu(self.menubar,tearoff=0)
         self.filemenu.add_command(label="Load Entity",command=self.loadEntityCallback)
+        self.filemenu.add_command(label="Load Players",command=self.loadPlayersCallback)
         self.filemenu.add_separator()
         self.filemenu.add_command(label="Save Fight",command=self.saveFightCallback,state="disable")
         self.filemenu.add_command(label="Load Fight",command=self.loadFightCallback)
         self.filemenu.add_separator()
+        self.filemenu.add_command(label="Settings",command=self.settingsCallback)
+        self.filemenu.add_separator()
         self.filemenu.add_command(label="Exit",command=self.exitCallback)
-        
-        
-        self.menubar.add_cascade(label="Menu",menu=self.filemenu)        
+
+
+        self.menubar.add_cascade(label="Menu",menu=self.filemenu)
         self.config(menu=self.menubar)
         
         #frame containing entities
@@ -299,7 +68,8 @@ class CombatManager(Tk):
 
         #start, add, clear and load buttons
         self.startButton=Button(self,text="Start",command=self.startCallback)
-        self.startButton.grid(row=1,column=0,sticky=EW,padx=5,pady=5)
+        #self.startButton.grid(row=1,column=0,sticky=EW,padx=5,pady=5)
+        self.startButton.grid(row=1,column=0,rowspan=2,sticky=NSEW,padx=5,pady=5)
 
         self.loadButton=Button(self,text="Load Entity",command=self.loadEntityCallback)
         self.loadButton.grid(row=1,column=1,sticky=EW,padx=5,pady=5)
@@ -313,7 +83,8 @@ class CombatManager(Tk):
 
         #Text with scrollbar for displaying entityqueue
         self.textframe=Frame(self)
-        self.textframe.grid(columnspan=6,row=0,column=4)
+        #self.textframe.grid(columnspan=6,row=0,column=4)
+        self.textframe.grid(columnspan=5,row=0,column=4)
         self.textscrollbar=Scrollbar(self.textframe)
         self.textscrollbar.grid(row=0,column=1,sticky=N+S+E)
         textfont=tkinter.font.nametofont("TkFixedFont")
@@ -323,27 +94,68 @@ class CombatManager(Tk):
 
         #command line, run ,undo, redo and next buttons
         self.commandstring=StringVar()
-        Label(self,text="Command:").grid(row=1,column=4)
+        #Label(self,text="Command:").grid(row=1,column=4)
+        Label(self,text="Command:").grid(row=2,column=4)
         self.commandEntry=Combobox(self,textvariable=self.commandstring,state='disabled',postcommand=self.updateHistory)
         self.commandEntry.bind('<Return>',self.runCallback)
         self.commandEntry.bind('<KP_Enter>',self.runCallback)
-        self.commandEntry.grid(row=1,column=5,sticky=W)
+        #self.commandEntry.grid(row=1,column=5,sticky=W)
+        self.commandEntry.grid(row=2,column=5,sticky=W)
         self.runButton=Button(self,text="Run",command=self.runCallback,state='disabled')
-        self.runButton.grid(row=1,column=6,sticky=EW)
+        #self.runButton.grid(row=1,column=6,sticky=EW)
+        self.runButton.grid(row=2,column=6,sticky=EW)
         self.undoButton=Button(self,text="Undo",command=self.undoCallback,state='disabled')
-        self.undoButton.grid(row=1,column=7,sticky=EW)
+        #self.undoButton.grid(row=1,column=7,sticky=EW)
+        self.undoButton.grid(row=2,column=7,sticky=EW)
         self.redoButton=Button(self,text="Redo",command=self.redoCallback,state='disabled')
-        self.redoButton.grid(row=1,column=8,sticky=EW)
+        #self.redoButton.grid(row=1,column=8,sticky=EW)
+        self.redoButton.grid(row=2,column=8,sticky=EW)
+
+
+        
         self.nextButton=Button(self,text="Next",command=self.nextCallback,state='disabled')
-        self.nextButton.grid(row=1,column=9,sticky=EW)
+        self.nextButton.grid(row=1,column=4,columnspan=5,sticky=EW)
+        #self.nextButton.grid(row=1,column=9,sticky=EW)
 
         #General Key Bindings
         self.bind('<Control-q>',self.exitCallback)
         self.bind('<Control-z>',self.undoCallback)
         self.bind('<Control-Z>',self.redoCallback)
+        self.bind('<Control-n>',self.nextCallback)
+
+        #Load Settings
+        self.loadSettings()
         
     def configureCanvas(self,event):
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+
+    def loadSettings(self):
+        if os.path.exists('settings.json'):
+            try:
+                f=open('settings.json','r')
+                self.settings=json.load(f)
+                f.close()
+            except OSError:
+                messagebox.showerror('Load Settings','Could not load settings')
+            except (KeyError,TypeError):
+                messagebox.showerror('Load Settings','Settings file not in correct format')                
+        else:
+            self.initializeSettings()
+
+    def initializeSettings(self):
+        currentdir=os.getcwd()
+        self.settings=dict()
+        self.settings['fightdir']=currentdir
+        self.settings['entitydir']=currentdir
+        self.settings['playerfiles']=[]
+        try:
+            f=open('settings.json','w')
+            json.dump(self.settings,f)
+            f.close()
+        except OSError:
+            messagebox.showerror("Save Settings","Could not save settings")
+            
+        
 
     def updateHistory(self):
         #use splicing to reverse list
@@ -456,12 +268,13 @@ class CombatManager(Tk):
                 self.enableWidgetsOnStart()
                 self.started=True
 
-    def nextCallback(self):
-        command=NextCommand(self.queue)
-        command.execute()
-        self.commandhistory.append(command)
-        self.checkCommandHistory()
-        self.refreshDisplay()
+    def nextCallback(self,event=None):
+        if self.started:
+            command=NextCommand(self.queue)
+            command.execute()
+            self.commandhistory.append(command)
+            self.checkCommandHistory()
+            self.refreshDisplay()
 
     def runCallback(self,event=None):
         commandstring=self.commandstring.get()
@@ -582,9 +395,20 @@ class CombatManager(Tk):
         self.text.delete(1.0,END)
         self.text.config(state=DISABLED)
 
+    def clearCallback(self):
+        self.queue.clear()
+        self.commandhistory.clear()
+        self.clearDisplay()
+        for e in self.entities:
+            e.destroy()
+        self.entities=[]
+        self.started=False
+        self.disableWidgetsOnStop()
+
+    #Menu Callbacks
 
     def loadEntityCallback(self):
-        filenames=filedialog.askopenfilenames()
+        filenames=filedialog.askopenfilenames(initialdir=self.settings['entitydir'])
         for filename in filenames:
             try:
                 f=open(filename,'r')
@@ -599,23 +423,42 @@ class CombatManager(Tk):
                 messagebox.showerror('Load Entity','File '+filename+' not in correct format')
                 e.destroyCallback()
 
-    def clearCallback(self):
-        self.queue.clear()
-        self.commandhistory.clear()
-        self.clearDisplay()
-        for e in self.entities:
-            e.destroy()
-        self.entities=[]
-        self.started=False
-        self.disableWidgetsOnStop()
+    def saveEntityCallback(self,e):
+        if e.name.get()=="":
+            messagebox.showwarning("Save","No name given.")
+            return
+        try:
+            filename=os.path.join(self.settings['entitydir'],e.name.get()+".json")
+            f=open(filename,'w')
+            d=e.toJson()
+            d['amount']=1
+            json.dump(d,f)
+            f.close()
+            messagebox.showinfo("Save","Entity saved as "+filename)
+        except OSError:
+            messagebox.showerror("Save","Could not save file")
+
+    def loadPlayersCallback(self):
+        for p in self.settings['playerfiles']:
+            try:
+                f=open(p,'r')
+                d=json.load(f)
+                f.close()
+                e=self.addCallback()
+                e.fillIn(d)
+            except OSError:
+                messagebox.showerror('Load Player','Could not open file '+filename)
+                e.destroyCallback()
+            except (KeyError,TypeError):
+                messagebox.showerror('Load Player','File '+filename+' not in correct format')
+                e.destroyCallback()
+                
 
     def saveFightCallback(self):
         if self.started:
-            filename=filedialog.asksaveasfilename(defaultextension=".json")
+            filename=filedialog.asksaveasfilename(initialdir=self.settings['fightdir'],defaultextension=".json")
             if filename:
                 try:
-                    f=open(filename,'w')
-
                     d=dict()
                     d["position"]=self.queue.position
                     d["round"]=self.queue.round
@@ -629,6 +472,7 @@ class CombatManager(Tk):
                     for ef in self.entities:
                         entityFramesList.append(ef.toJson())
                     d["frames"]=entityFramesList
+                    f=open(filename,'w')
                     json.dump(d,f)
                     f.close()
                     messagebox.showinfo("Save Fight","Fight saved as "+filename)
@@ -639,7 +483,7 @@ class CombatManager(Tk):
         if self.started:
             if not messagebox.askyesno("Start","Are you sure you  want to restart combat? Progress will be lost."):
                 return
-        filename=filedialog.askopenfilename()
+        filename=filedialog.askopenfilename(initialdir=self.settings['fightdir'])
         if filename:
             try:
                 f=open(filename,'r')
@@ -661,7 +505,18 @@ class CombatManager(Tk):
             except OSError:
                 messagebox.showerror('Load Fight','Could not open file '+filename)                
             except (KeyError,TypeError):
-                messagebox.showerror('Load Fight','File '+filename+' not in correct format')                        
+                messagebox.showerror('Load Fight','File '+filename+' not in correct format')
+
+    def settingsCallback(self):
+        sd=SettingsDialog(self,self.settings)
+        if sd.settings is not None:
+            self.settings=sd.settings
+            try:
+                f=open('settings.json','w')
+                json.dump(self.settings,f)
+                f.close()
+            except OSError:
+                messagebox.showerror("Save Settings","Could not save settings")
 
     def exitCallback(self,event=None):
         if messagebox.askyesno("Exit","Are you sure you want to exit?"):
