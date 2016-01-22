@@ -1,5 +1,3 @@
-#!/bin/python3
-
 import dice
 import json
 import sys

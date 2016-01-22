@@ -4,11 +4,13 @@ from tkinter import filedialog
 from tkinter.ttk import Combobox
 import tkinter.font
 
-from initiative import *
-from initiativecommands import *
 import json
 import os
 
+import dice
+from helpmessages import *
+from entityqueue import *
+from commands import *
 from entityframe import EntityFrame
 from rolldialog import RollDialog
 from settingsdialog import SettingsDialog

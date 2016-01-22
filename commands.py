@@ -1,7 +1,11 @@
 import initiative
 
-#module that implements the command pattern for initiative(gui)
-#and a commandhistory array
+#module that implements the command pattern for initiative(gui),
+#a commandhistory array and commands
+
+commands=['next','heal','damage','remove','restore','delay','help','stop']
+usage=['','n hp','n hp','n','n','n','command','']
+shortcuts=['n','he','da','rem','res','de','h','s']
 
 class Command:
 
