@@ -3,11 +3,11 @@ import dice
 
 class RollDialog(Toplevel):
 
-    def __init__(self,master,entities):
+    def __init__(self,master,entities,namesdict):
         Toplevel.__init__(self,master)
         self.title("Insert Rolls")
         self.transient(master)
-
+        
         self.frame=Frame(self)
         #header
         Label(self.frame,text='Name',font="-weight bold").grid(row=0,column=0,padx=5,pady=5)
@@ -19,17 +19,32 @@ class RollDialog(Toplevel):
         self.focus=None
         self.rolls=None
         self.rollvars=[]
+        self.names=[]
+        self.entities=entities
+        self.namesdict=namesdict
+        
         i=0
-        for e in entities:
+        for e in self.entities:
+            #make sure name is in namesdict
+            self.namesdict.setdefault(e.name.get(),0)
+            #check if a second entity with a name is added
+            if self.namesdict[e.name.get()]==1:
+                self.master.updatename(e.name.get())
             for j in range(e.amount.get()):
                 #list of roll, bonus, initiative
                 self.rollvars.append([IntVar() for k in range(3)])
                 self.rollvars[i][0].trace('w',lambda name,index,mode,i=i:self.updateInitiative(i))
                 self.rollvars[i][1].set(e.bonus.get())
-                if e.amount.get()==1:
+
+                
+                #generate names
+                if self.namesdict[e.name.get()]==0 and e.amount.get()==1:
                     name=e.name.get()
                 else:
-                    name=e.name.get()+' '+str(j+1)
+                    name=e.name.get()+' '+str(self.namesdict[e.name.get()]+j+1)
+                self.names.append(name)
+
+                
                 Label(self.frame,text=name,width=10).grid(row=i+1,column=0,sticky=W,padx=5,pady=5)               
                 if e.autoroll.get():
                     self.rollvars[i][0].set(dice.Dice.d20.roll())
@@ -48,6 +63,8 @@ class RollDialog(Toplevel):
                 #result: initiative
                 Label(self.frame,textvariable=self.rollvars[i][2]).grid(row=i+1,column=5)                
                 i+=1
+            #update number of times name is used
+            namesdict[e.name.get()]+=e.amount.get()
 
         #ok and cancel button in seperate frame
         buttonframe=Frame(self)
@@ -84,12 +101,17 @@ class RollDialog(Toplevel):
                 self.focus.focus()
                 self.focus.selection_to(END)
                 return
+        #
         self.withdraw()
         self.update_idletasks()
         self.rolls=[r[0].get() for r in self.rollvars]
-        self.cancelCallback()
+        self.master.focus_set()
+        self.destroy()
 
     def cancelCallback(self):
+        #restore namesdict
+        for e in self.entities:
+            self.namesdict[e.name.get()]-=e.amount.get()
         self.master.focus_set()
         self.destroy()
 

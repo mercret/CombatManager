@@ -19,11 +19,13 @@ class CombatManager(Tk):
         Tk.__init__(self)
         self.title("Combat Manager")
         self.resizable(width=False,height=False)
+        
         self.entities=[]
         self.queue=EntityQueue()
         self.started=False
         self.textcommandhistory=[]
         self.commandhistory=CommandHistory()
+        self.names=dict()
         #Menu
         self.menubar=Menu(self)
         #File Menu
@@ -72,13 +74,16 @@ class CombatManager(Tk):
         self.startButton.grid(row=1,column=0,rowspan=2,sticky=NSEW,padx=5,pady=5)
 
         self.loadButton=Button(self,text="Load Entity",command=self.loadEntityCallback)
-        self.loadButton.grid(row=1,column=1,sticky=EW,padx=5,pady=5)
+        #self.loadButton.grid(row=1,column=1,sticky=EW,padx=5,pady=5)
+        self.loadButton.grid(row=1,column=1,rowspan=2,sticky=NSEW,padx=5,pady=5)
 
         self.clearButton=Button(self,text="Clear", command=self.clearCallback)
-        self.clearButton.grid(row=1,column=2,sticky=EW,padx=5,pady=5)
+        #self.clearButton.grid(row=1,column=2,sticky=EW,padx=5,pady=5)
+        self.clearButton.grid(row=1,column=2,rowspan=2,sticky=NSEW,padx=5,pady=5)
         
         self.addButton=Button(self,text="+",command=self.addCallback)
-        self.addButton.grid(row=1,column=3,sticky=E,padx=5,pady=5)
+        #self.addButton.grid(row=1,column=3,sticky=E,padx=5,pady=5)
+        self.addButton.grid(row=1,column=3,rowspan=2,sticky=NSEW,padx=5,pady=5)
         
 
         #Text with scrollbar for displaying entityqueue
@@ -128,6 +133,12 @@ class CombatManager(Tk):
         
     def configureCanvas(self,event):
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+
+    def updatename(self,name):
+        for e in self.queue:
+            if e.name==name:
+                e.name=name+' 1'
+                return
 
     def loadSettings(self):
         if os.path.exists('settings.json'):
@@ -205,18 +216,14 @@ class CombatManager(Tk):
         if e.hasError():
             messagebox.showwarning("Add Entity","One or more entries contain errors.")
             return
-        rd=RollDialog(self,[e])
+        rd=RollDialog(self,[e],self.names)
         if rd.rolls==None:
             return
         else:
             i=0
             entities=[]
             for j in range(e.amount.get()):
-                if e.amount.get()==1:
-                    name=e.name.get()
-                else:
-                    name=e.name.get()+' '+str(j+1)
-                entities.append(Entity(name,e.bonus.get(),dice.getHealth(e.health.get()),rd.rolls[i],e.player.get()))
+                entities.append(Entity(rd.names[i],e.bonus.get(),dice.getHealth(e.health.get()),rd.rolls[i],e.player.get()))
                 i+=1
                     
 
@@ -244,21 +251,19 @@ class CombatManager(Tk):
             if self.started:
                 if messagebox.askyesno("Start","Are you sure you  want to restart combat? Progress will be lost."):
                     self.queue.clear()
+                    self.names.clear()
                 else:
                     return
             #second pass
-            rd=RollDialog(self,self.entities)
+            rd=RollDialog(self,self.entities,self.names)
+            print(self.names)
             if rd.rolls==None:
                 return
             else:
                 i=0
                 for e in self.entities:
                     for j in range(e.amount.get()):
-                        if e.amount.get()==1:
-                            name=e.name.get()
-                        else:
-                            name=e.name.get()+' '+str(j+1)
-                        self.queue.append(Entity(name,e.bonus.get(),dice.getHealth(e.health.get()),rd.rolls[i],e.player.get()))
+                        self.queue.append(Entity(rd.names[i],e.bonus.get(),dice.getHealth(e.health.get()),rd.rolls[i],e.player.get()))
                         i+=1
                         
                             
@@ -398,6 +403,7 @@ class CombatManager(Tk):
     def clearCallback(self):
         self.queue.clear()
         self.commandhistory.clear()
+        self.names.clear()
         self.clearDisplay()
         for e in self.entities:
             e.destroy()
@@ -472,6 +478,7 @@ class CombatManager(Tk):
                     for ef in self.entities:
                         entityFramesList.append(ef.toJson())
                     d["frames"]=entityFramesList
+                    d["names"]=self.names
                     f=open(filename,'w')
                     json.dump(d,f)
                     f.close()
@@ -499,7 +506,7 @@ class CombatManager(Tk):
                 for ef in d["frames"]:
                     e=self.addCallback()
                     e.fillIn(ef)
-
+                self.names=d["names"]
                 self.started=True
                 self.enableWidgetsOnStart()
             except OSError:
