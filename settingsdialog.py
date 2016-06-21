@@ -2,13 +2,14 @@ from tkinter import *
 from tkinter import filedialog
 
 import os
+import copy
 
 class SettingsDialog(Toplevel):
 
     def __init__(self,master,settings):
         Toplevel.__init__(self,master)
-        self.oldsettings=settings.copy()
-        self.settings=settings.copy()
+        self.oldsettings=copy.deepcopy(settings)
+        self.settings=copy.deepcopy(settings)
         
         self.title("Settings")
         self.transient(master)

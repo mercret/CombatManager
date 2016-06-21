@@ -472,10 +472,8 @@ class CombatManager(Tk):
                 e.fillIn(d)
             except OSError:
                 messagebox.showerror('Load Player','Could not open file '+p)
-                e.destroyCallback()
             except (KeyError,TypeError):
                 messagebox.showerror('Load Player','File '+p+' not in correct format')
-                e.destroyCallback()
                 
 
     def saveFightCallback(self):
