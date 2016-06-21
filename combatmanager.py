@@ -20,7 +20,10 @@ class CombatManager(Tk):
     def __init__(self):
         Tk.__init__(self)
         self.title("Combat Manager")
-        self.resizable(width=False,height=False)
+
+        self.rowconfigure(0,weight=1)
+        for i in range(8):
+            self.columnconfigure(i,weight=1)
         
         self.entities=[]
         self.queue=EntityQueue()
@@ -50,9 +53,12 @@ class CombatManager(Tk):
         self.canvasframe=Frame(self,borderwidth=2,relief=RIDGE)
         self.canvasframe.grid(row=0,column=0,columnspan=4,sticky='nsew')
         self.canvasframe.rowconfigure(0,weight=1)
+        self.canvasframe.columnconfigure(0,weight=1)
 
         self.canvas=Canvas(self.canvasframe,highlightthickness=0)
         self.frame=Frame(self.canvas)
+
+        
         
         #scrollbar
         self.scrollbar=Scrollbar(self.canvasframe,command=self.canvas.yview)
@@ -90,14 +96,24 @@ class CombatManager(Tk):
 
         #Text with scrollbar for displaying entityqueue
         self.textframe=Frame(self)
-        #self.textframe.grid(columnspan=6,row=0,column=4)
-        self.textframe.grid(columnspan=5,row=0,column=4)
+        self.textframe.grid(columnspan=5,row=0,column=4,sticky='nsew')
+
+        self.textframe.rowconfigure(0,weight=1)
+        self.textframe.columnconfigure(0,weight=1)
+        
         self.textscrollbar=Scrollbar(self.textframe)
         self.textscrollbar.grid(row=0,column=1,sticky=N+S+E)
         textfont=tkinter.font.nametofont("TkFixedFont")
         self.text=Text(self.textframe,height=32,width=40,state=DISABLED,yscrollcommand=self.textscrollbar.set,font=textfont.configure(size=14))
-        self.text.grid(row=0,column=0)
+        self.text.grid(row=0,column=0,sticky='nsew')
         self.textscrollbar.config(command=self.text.yview)
+
+        #mousewheel events
+        #windows
+        self.text.bind("<MouseWheel>",lambda event: self.text.yview('scroll',int(-1*(event.delta/120)),'units'))
+        #unix
+        self.text.bind("<Button-4>",lambda event: self.text.yview('scroll',-1,'units'))
+        self.text.bind("<Button-5>",lambda event: self.text.yview('scroll',1,'units'))
 
         #command line, run ,undo, redo and next buttons
         self.commandstring=StringVar()
@@ -107,7 +123,7 @@ class CombatManager(Tk):
         self.commandEntry.bind('<Return>',self.runCallback)
         self.commandEntry.bind('<KP_Enter>',self.runCallback)
         #self.commandEntry.grid(row=1,column=5,sticky=W)
-        self.commandEntry.grid(row=2,column=5,sticky=W)
+        self.commandEntry.grid(row=2,column=5,sticky=EW)
         self.runButton=Button(self,text="Run",command=self.runCallback,state='disabled')
         #self.runButton.grid(row=1,column=6,sticky=EW)
         self.runButton.grid(row=2,column=6,sticky=EW)
@@ -258,7 +274,7 @@ class CombatManager(Tk):
                     return
             #second pass
             rd=RollDialog(self,self.entities,self.names)
-            print(self.names)
+            #print(self.names)
             if rd.rolls==None:
                 return
             else:
@@ -455,10 +471,10 @@ class CombatManager(Tk):
                 e=self.addCallback()
                 e.fillIn(d)
             except OSError:
-                messagebox.showerror('Load Player','Could not open file '+filename)
+                messagebox.showerror('Load Player','Could not open file '+p)
                 e.destroyCallback()
             except (KeyError,TypeError):
-                messagebox.showerror('Load Player','File '+filename+' not in correct format')
+                messagebox.showerror('Load Player','File '+p+' not in correct format')
                 e.destroyCallback()
                 
 
@@ -518,6 +534,7 @@ class CombatManager(Tk):
 
     def settingsCallback(self):
         sd=SettingsDialog(self,self.settings)
+        print(sd.settings)
         if sd.settings is not None:
             self.settings=sd.settings
             try:
