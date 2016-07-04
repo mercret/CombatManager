@@ -21,8 +21,10 @@ class CombatManager(Tk):
         Tk.__init__(self)
         self.title("Combat Manager")
 
+        #allows row 0 (=frame, textframe) to expand vertically
         self.rowconfigure(0,weight=1)
-        for i in range(8):
+        #allows columns starting with textframe to expand horizontally
+        for i in range(4,9):
             self.columnconfigure(i,weight=1)
         
         self.entities=[]
@@ -52,6 +54,7 @@ class CombatManager(Tk):
         #frame containing entities
         self.canvasframe=Frame(self,borderwidth=2,relief=RIDGE)
         self.canvasframe.grid(row=0,column=0,columnspan=4,sticky='nsew')
+
         self.canvasframe.rowconfigure(0,weight=1)
         self.canvasframe.columnconfigure(0,weight=1)
 
@@ -148,6 +151,7 @@ class CombatManager(Tk):
 
         #Load Settings
         self.loadSettings()
+
         
     def configureCanvas(self,event):
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
