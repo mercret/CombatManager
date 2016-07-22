@@ -1,5 +1,3 @@
-import initiative
-
 #module that implements the command pattern for initiative(gui),
 #a commandhistory array and commands
 

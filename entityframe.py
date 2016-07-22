@@ -1,6 +1,5 @@
 from tkinter import *
-from initiative import *
-import json
+import dice
 
 class EntityFrame(Frame):
 
