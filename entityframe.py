@@ -4,7 +4,7 @@ import dice
 class EntityFrame(Frame):
 
     def __init__(self,master,combatmanager):
-        Frame.__init__(self,master)        
+        Frame.__init__(self,master)
         self['bd']=1
         self['relief']='groove'
         self.master=master

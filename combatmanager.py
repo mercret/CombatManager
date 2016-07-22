@@ -14,6 +14,8 @@ from commands import *
 from entityframe import EntityFrame
 from rolldialog import RollDialog
 from settingsdialog import SettingsDialog
+from entityqueueframe import EntityQueueFrame
+from verticalscrolledframe import VerticalScrolledFrame
 
 
 class CombatManager(Tk):
@@ -50,32 +52,37 @@ class CombatManager(Tk):
         self.menubar.add_cascade(label="Menu", menu=self.filemenu)
         self.config(menu=self.menubar)
 
-        # frame containing entities
-        self.canvasframe = Frame(self, borderwidth=2, relief=RIDGE)
-        self.canvasframe.grid(row=0, column=0, columnspan=4, sticky='nsew')
+        # # frame containing entities
+        # self.canvasframe = Frame(self, borderwidth=2, relief=RIDGE)
+        # self.canvasframe.grid(row=0, column=0, columnspan=4, sticky='nsew')
+        #
+        # self.canvasframe.rowconfigure(0, weight=1)
+        # self.canvasframe.columnconfigure(0, weight=1)
+        #
+        # self.canvas = Canvas(self.canvasframe, highlightthickness=0)
+        # self.frame = Frame(self.canvas)
+        #
+        # # scrollbar
+        # self.scrollbar = Scrollbar(self.canvasframe, command=self.canvas.yview)
+        # self.scrollbar.grid(row=0, column=1, sticky='nse')
+        # self.canvas.configure(yscrollcommand=self.scrollbar.set)
+        #
+        # self.canvas.grid(row=0, column=0, sticky='nsew')
+        # self.canvas.create_window((0, 0), window=self.frame, anchor='nw')
+        # self.frame.bind("<Configure>", self.configureCanvas)
+        #
+        # # mousewheel events
+        # # windows
+        # self.canvas.bind("<MouseWheel>",
+        #                  lambda event: self.canvas.yview('scroll', int(-1 * (event.delta / 120)), 'units'))
+        # # unix
+        # self.canvas.bind("<Button-4>", lambda event: self.canvas.yview('scroll', -1, 'units'))
+        # self.canvas.bind("<Button-5>", lambda event: self.canvas.yview('scroll', 1, 'units'))
 
-        self.canvasframe.rowconfigure(0, weight=1)
-        self.canvasframe.columnconfigure(0, weight=1)
+        self.frame=VerticalScrolledFrame(self,borderwidth=2,relief=RIDGE)
+        self.frame.grid(row=0,column=0,columnspan=4,sticky=NSEW)
 
-        self.canvas = Canvas(self.canvasframe, highlightthickness=0)
-        self.frame = Frame(self.canvas)
 
-        # scrollbar
-        self.scrollbar = Scrollbar(self.canvasframe, command=self.canvas.yview)
-        self.scrollbar.grid(row=0, column=1, sticky='nse')
-        self.canvas.configure(yscrollcommand=self.scrollbar.set)
-
-        self.canvas.grid(row=0, column=0, sticky='nsew')
-        self.canvas.create_window((0, 0), window=self.frame, anchor='nw')
-        self.frame.bind("<Configure>", self.configureCanvas)
-
-        # mousewheel events
-        # windows
-        self.canvas.bind("<MouseWheel>",
-                         lambda event: self.canvas.yview('scroll', int(-1 * (event.delta / 120)), 'units'))
-        # unix
-        self.canvas.bind("<Button-4>", lambda event: self.canvas.yview('scroll', -1, 'units'))
-        self.canvas.bind("<Button-5>", lambda event: self.canvas.yview('scroll', 1, 'units'))
 
         # start, add, clear and load buttons
         self.startButton = Button(self, text="Start", command=self.startCallback)
@@ -94,27 +101,32 @@ class CombatManager(Tk):
         # self.addButton.grid(row=1,column=3,sticky=E,padx=5,pady=5)
         self.addButton.grid(row=1, column=3, rowspan=2, sticky=NSEW, padx=5, pady=5)
 
-        # Text with scrollbar for displaying entityqueue
-        self.textframe = Frame(self)
-        self.textframe.grid(columnspan=5, row=0, column=4, sticky='nsew')
+        # # Text with scrollbar for displaying entityqueue
+        # self.textframe = Frame(self)
+        # self.textframe.grid(columnspan=5, row=0, column=4, sticky='nsew')
+        #
+        # self.textframe.rowconfigure(0, weight=1)
+        # self.textframe.columnconfigure(0, weight=1)
+        #
+        # self.textscrollbar = Scrollbar(self.textframe)
+        # self.textscrollbar.grid(row=0, column=1, sticky=N + S + E)
+        # textfont = tkinter.font.nametofont("TkFixedFont")
+        # self.text = Text(self.textframe, height=32, width=40, state=DISABLED, yscrollcommand=self.textscrollbar.set,
+        #                  font=textfont.configure(size=14))
+        # self.text.grid(row=0, column=0, sticky='nsew')
+        # self.textscrollbar.config(command=self.text.yview)
+        #
+        # # mousewheel events
+        # # windows
+        # self.text.bind("<MouseWheel>", lambda event: self.text.yview('scroll', int(-1 * (event.delta / 120)), 'units'))
+        # # unix
+        # self.text.bind("<Button-4>", lambda event: self.text.yview('scroll', -1, 'units'))
+        # self.text.bind("<Button-5>", lambda event: self.text.yview('scroll', 1, 'units'))
 
-        self.textframe.rowconfigure(0, weight=1)
-        self.textframe.columnconfigure(0, weight=1)
+        #test
+        self.eqf=EntityQueueFrame(self)
+        self.eqf.grid(columnspan=5,row=0,column=6,sticky=NSEW)
 
-        self.textscrollbar = Scrollbar(self.textframe)
-        self.textscrollbar.grid(row=0, column=1, sticky=N + S + E)
-        textfont = tkinter.font.nametofont("TkFixedFont")
-        self.text = Text(self.textframe, height=32, width=40, state=DISABLED, yscrollcommand=self.textscrollbar.set,
-                         font=textfont.configure(size=14))
-        self.text.grid(row=0, column=0, sticky='nsew')
-        self.textscrollbar.config(command=self.text.yview)
-
-        # mousewheel events
-        # windows
-        self.text.bind("<MouseWheel>", lambda event: self.text.yview('scroll', int(-1 * (event.delta / 120)), 'units'))
-        # unix
-        self.text.bind("<Button-4>", lambda event: self.text.yview('scroll', -1, 'units'))
-        self.text.bind("<Button-5>", lambda event: self.text.yview('scroll', 1, 'units'))
 
         # command line, run ,undo, redo and next buttons
         self.commandstring = StringVar()
@@ -189,7 +201,7 @@ class CombatManager(Tk):
         self.commandEntry.configure(values=[''] + self.textcommandhistory[::-1])
 
     def addCallback(self):
-        e = EntityFrame(self.frame, self)
+        e = EntityFrame(self.frame.interior, self)
         e.pack(padx=5, pady=5)
         index = len(self.entities)
         self.entities.append(e)
@@ -402,16 +414,18 @@ class CombatManager(Tk):
 
     # refresh display of entityqueue
     def refreshDisplay(self):
-        self.text.config(state=NORMAL)
-        self.text.delete(1.0, END)
-        self.text.insert(END, self.queue)
-        self.text.config(state=DISABLED)
+        # self.text.config(state=NORMAL)
+        # self.text.delete(1.0, END)
+        # self.text.insert(END, self.queue)
+        # self.text.config(state=DISABLED)
+        self.eqf.refresh(self.queue)
 
     # clear display of entityqueue
     def clearDisplay(self):
-        self.text.config(state=NORMAL)
-        self.text.delete(1.0, END)
-        self.text.config(state=DISABLED)
+        self.eqf.clear()
+        # self.text.config(state=NORMAL)
+        # self.text.delete(1.0, END)
+        # self.text.config(state=DISABLED)
 
     def clearCallback(self):
         self.queue.clear()
