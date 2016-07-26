@@ -11,7 +11,7 @@ import dice
 from helpmessages import *
 from entityqueue import *
 from commands import *
-from entityframe import EntityFrame
+from entryframe import EntryFrame
 from rolldialog import RollDialog
 from settingsdialog import SettingsDialog
 from entityqueueframe import EntityQueueFrame
@@ -52,33 +52,7 @@ class CombatManager(Tk):
         self.menubar.add_cascade(label="Menu", menu=self.filemenu)
         self.config(menu=self.menubar)
 
-        # # frame containing entities
-        # self.canvasframe = Frame(self, borderwidth=2, relief=RIDGE)
-        # self.canvasframe.grid(row=0, column=0, columnspan=4, sticky='nsew')
-        #
-        # self.canvasframe.rowconfigure(0, weight=1)
-        # self.canvasframe.columnconfigure(0, weight=1)
-        #
-        # self.canvas = Canvas(self.canvasframe, highlightthickness=0)
-        # self.frame = Frame(self.canvas)
-        #
-        # # scrollbar
-        # self.scrollbar = Scrollbar(self.canvasframe, command=self.canvas.yview)
-        # self.scrollbar.grid(row=0, column=1, sticky='nse')
-        # self.canvas.configure(yscrollcommand=self.scrollbar.set)
-        #
-        # self.canvas.grid(row=0, column=0, sticky='nsew')
-        # self.canvas.create_window((0, 0), window=self.frame, anchor='nw')
-        # self.frame.bind("<Configure>", self.configureCanvas)
-        #
-        # # mousewheel events
-        # # windows
-        # self.canvas.bind("<MouseWheel>",
-        #                  lambda event: self.canvas.yview('scroll', int(-1 * (event.delta / 120)), 'units'))
-        # # unix
-        # self.canvas.bind("<Button-4>", lambda event: self.canvas.yview('scroll', -1, 'units'))
-        # self.canvas.bind("<Button-5>", lambda event: self.canvas.yview('scroll', 1, 'units'))
-
+        #VerticalScrolledFrame containing EntityFrames
         self.frame=VerticalScrolledFrame(self,borderwidth=2,relief=RIDGE)
         self.frame.grid(row=0,column=0,columnspan=4,sticky=NSEW)
 
@@ -125,7 +99,7 @@ class CombatManager(Tk):
 
         #test
         self.eqf=EntityQueueFrame(self)
-        self.eqf.grid(columnspan=5,row=0,column=6,sticky=NSEW)
+        self.eqf.grid(row=0,column=4,columnspan=5,sticky=NSEW)
 
 
         # command line, run ,undo, redo and next buttons
@@ -168,7 +142,6 @@ class CombatManager(Tk):
         for e in self.queue:
             if e.name == name:
                 e.name = name + ' 1'
-                return
 
     def loadSettings(self):
         if os.path.exists('settings.json'):
@@ -201,7 +174,7 @@ class CombatManager(Tk):
         self.commandEntry.configure(values=[''] + self.textcommandhistory[::-1])
 
     def addCallback(self):
-        e = EntityFrame(self.frame.interior, self)
+        e = EntryFrame(self.frame.interior, self)
         e.pack(padx=5, pady=5)
         index = len(self.entities)
         self.entities.append(e)

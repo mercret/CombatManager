@@ -134,7 +134,7 @@ class EntityQueue:
             s += self.form.format(self.arrow if i == self.position else " " * len(self.arrow), i + 1, self.queue[i])
         return s
 
-    # iterator for use in for loops. Not used currently
+    # iterator for use in for loops.
     def __iter__(self):
         return self
 
