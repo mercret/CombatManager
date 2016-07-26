@@ -1,4 +1,4 @@
-from commands import *
+from commands.commands import commands,shortcuts,usage
 
 helpform='Usage: {} {}\nShortcut: {}\n{}'
 helpmessages=['Moves to next entity in the queue',

@@ -1,5 +1,7 @@
 from tkinter import *
-import dice
+
+from objects import dice
+
 
 class RollDialog(Toplevel):
 

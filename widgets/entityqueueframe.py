@@ -1,6 +1,6 @@
 from tkinter import *
-from verticalscrolledframe import VerticalScrolledFrame
-from entityqueue import *
+
+from widgets.verticalscrolledframe import VerticalScrolledFrame
 
 
 class EntityQueueFrame(VerticalScrolledFrame):
@@ -78,9 +78,14 @@ class EntityContainer():
         Button(master, text="X").grid(row=row, column=7, rowspan=2, columnspan=2, sticky=NSEW, padx=5)
 
     def fillin(self, index, entity, arrow):
+        self.entity=entity
+
         self.arrow.set('\u2192' if arrow else '')
         self.index.set('{}'.format(index+1))
         self.name.set('{}'.format(entity.name))
         self.initiative.set('{:2.0f}'.format(entity.initiative))
         self.health.set('{:2}/{:2}'.format(entity.health, entity.maxHealth))
+
+
+
 
