@@ -62,10 +62,18 @@ class EntityQueue:
         if pos == -1:
             return self.queue[self.position]
         else:
-            return self.queue[pos - 1]
+            return self.queue[pos]
 
     def append(self, entity):
-        self.queue.append(entity)
+        added=False
+        i=0
+        while not added and i < self.length:
+            if self.queue[i].initiative < entity.initiative:
+                self.queue.insert(i,entity)
+                added=True
+            i+=1
+        if not added:
+            self.queue.append(entity)
         self.length += 1
 
     def remove(self, entity):
@@ -110,20 +118,29 @@ class EntityQueue:
         return e
 
     def heal(self, pos, hp):
-        self.queue[pos - 1].heal(hp)
+        self.queue[pos ].heal(hp)
 
     def damage(self, pos, hp):
-        self.queue[pos - 1].damage(hp)
+        self.queue[pos].damage(hp)
 
     def withdraw(self, pos):
-        self.queue[pos - 1].active = False
+        self.queue[pos].active = False
 
     def restore(self, pos):
-        self.queue[pos - 1].active = True
+        self.queue[pos].active = True
 
-    def delay(self, change):
-        self.queue[self.position].initiative -= change
-        self.sort()
+    def delay(self, pos=-1,down=True):
+        if pos==-1:
+            pos=self.position
+
+        if down:
+            change=pos+1
+        else:
+            change=pos-1
+
+        tmp=self.queue[change]
+        self.queue[change]=self.queue[pos]
+        self.queue[pos]=tmp
 
     # returns string representation of the queue
     # active entity is marked with arrow

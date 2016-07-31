@@ -73,30 +73,8 @@ class CombatManager(Tk):
         # self.addButton.grid(row=1,column=3,sticky=E,padx=5,pady=5)
         self.addButton.grid(row=1, column=3, rowspan=2, sticky=NSEW, padx=5, pady=5)
 
-        # # Text with scrollbar for displaying entityqueue
-        # self.textframe = Frame(self)
-        # self.textframe.grid(columnspan=5, row=0, column=4, sticky='nsew')
-        #
-        # self.textframe.rowconfigure(0, weight=1)
-        # self.textframe.columnconfigure(0, weight=1)
-        #
-        # self.textscrollbar = Scrollbar(self.textframe)
-        # self.textscrollbar.grid(row=0, column=1, sticky=N + S + E)
-        # textfont = tkinter.font.nametofont("TkFixedFont")
-        # self.text = Text(self.textframe, height=32, width=40, state=DISABLED, yscrollcommand=self.textscrollbar.set,
-        #                  font=textfont.configure(size=14))
-        # self.text.grid(row=0, column=0, sticky='nsew')
-        # self.textscrollbar.config(command=self.text.yview)
-        #
-        # # mousewheel events
-        # # windows
-        # self.text.bind("<MouseWheel>", lambda event: self.text.yview('scroll', int(-1 * (event.delta / 120)), 'units'))
-        # # unix
-        # self.text.bind("<Button-4>", lambda event: self.text.yview('scroll', -1, 'units'))
-        # self.text.bind("<Button-5>", lambda event: self.text.yview('scroll', 1, 'units'))
-
-        #test
-        self.eqf=EntityQueueFrame(self)
+        #EntityQueueuFrame containing the EntityQueue
+        self.eqf=EntityQueueFrame(self,self)
         self.eqf.grid(row=0,column=4,columnspan=5,sticky=NSEW)
 
 
@@ -129,6 +107,8 @@ class CombatManager(Tk):
         self.bind('<Control-z>', self.undoCallback)
         self.bind('<Control-Z>', self.redoCallback)
         self.bind('<Control-n>', self.nextCallback)
+        self.bind('<Control-o>', self.loadFightCallback)
+        self.bind('<Control-s>',self.saveFightCallback)
 
         # Load Settings
         self.loadSettings()
@@ -209,6 +189,7 @@ class CombatManager(Tk):
                 # ef.autoroll.set(True)
         self.filemenu.entryconfig("Save Fight", state='disable')
 
+    #external callbacks (=called from object other than combatmanager)
     def addToCombat(self, e):
         if e.hasError():
             messagebox.showwarning("Add Entity", "One or more entries contain errors.")
@@ -225,10 +206,7 @@ class CombatManager(Tk):
                 i += 1
 
             command = AddCommand(self.queue, entities)
-            command.execute()
-            self.refreshDisplay()
-            self.commandhistory.append(command)
-            self.checkCommandHistory()
+            self.executeCommand(command)
 
     def startCallback(self):
         error = False
@@ -263,7 +241,7 @@ class CombatManager(Tk):
                                    e.player.get()))
                         i += 1
 
-                self.queue.sort()
+                #self.queue.sort()
                 self.refreshDisplay()
 
                 self.enableWidgetsOnStart()
@@ -346,10 +324,7 @@ class CombatManager(Tk):
         # execute command
         if command is not None:
             try:
-                command.execute()
-                self.refreshDisplay()
-                self.commandhistory.append(command)
-                self.checkCommandHistory()
+                self.executeCommand(command)
                 self.textcommandhistory.append(self.commandstring.get())
                 self.commandstring.set('')
             except IndexError:
@@ -385,18 +360,11 @@ class CombatManager(Tk):
 
     # refresh display of entityqueue
     def refreshDisplay(self):
-        # self.text.config(state=NORMAL)
-        # self.text.delete(1.0, END)
-        # self.text.insert(END, self.queue)
-        # self.text.config(state=DISABLED)
-        self.eqf.refresh(self.queue)
+        self.eqf.refresh()
 
     # clear display of entityqueue
     def clearDisplay(self):
         self.eqf.clear()
-        # self.text.config(state=NORMAL)
-        # self.text.delete(1.0, END)
-        # self.text.config(state=DISABLED)
 
     def clearCallback(self):
         self.queue.clear()
@@ -408,6 +376,12 @@ class CombatManager(Tk):
         self.entities = []
         self.started = False
         self.disableWidgetsOnStop()
+
+    def executeCommand(self,command):
+        command.execute()
+        self.refreshDisplay()
+        self.commandhistory.append(command)
+        self.checkCommandHistory()
 
     # Menu Callbacks
 
@@ -455,7 +429,7 @@ class CombatManager(Tk):
             except (KeyError, TypeError):
                 messagebox.showerror('Load Player', 'File ' + p + ' not in correct format')
 
-    def saveFightCallback(self):
+    def saveFightCallback(self,event=None):
         if self.started:
             filename = filedialog.asksaveasfilename(initialdir=self.settings['fightdir'], defaultextension=".json")
             if filename:
@@ -481,7 +455,7 @@ class CombatManager(Tk):
                 except OSError:
                     messagebox.showerror("Save Fight", "Could not save file")
 
-    def loadFightCallback(self):
+    def loadFightCallback(self, event=None):
         if self.started:
             if not messagebox.askyesno("Start", "Are you sure you  want to restart combat? Progress will be lost."):
                 return
@@ -496,7 +470,7 @@ class CombatManager(Tk):
                 self.queue.round = d["round"]
                 for e in d["queue"]:
                     self.queue.append(Entity.fromDict(e))
-                self.queue.sort()
+                #self.queue.sort()
                 self.refreshDisplay()
                 for ef in d["frames"]:
                     e = self.addCallback()

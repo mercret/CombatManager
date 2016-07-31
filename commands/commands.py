@@ -2,7 +2,7 @@
 #a commandhistory array and commands
 
 commands=['next','heal','damage','remove','restore','delay','help','stop']
-usage=['','n hp','n hp','n','n','n','command','']
+usage=['','n hp','n hp','n','n','n d','command','']
 shortcuts=['n','he','da','rem','res','de','h','s']
 
 class Command:
@@ -88,21 +88,23 @@ class RestoreCommand(Command):
 
 class DelayCommand(Command):
 
-    def __init__(self,entityqueue,change):
+    def __init__(self,entityqueue,pos,down):
         Command.__init__(self,entityqueue)
-        self.change=change
-        self.entity=None
-        self.previnit=0
+        self.pos=pos
+        self.down=down
+        self.newpos=pos+1 if down else pos-1
 
     def execute(self):
-        self.previnit=self.entityqueue.get().initiative
-        self.entity=self.entityqueue.get()
-        self.entityqueue.delay(self.change)
+        #self.entity=self.entityqueue.get(self.pos,self.
+        #self.previnit=self.entity.initiative
+        self.entityqueue.delay(self.pos,self.down)
 
     def undo(self):
-        self.entity.initiative=self.previnit
+        self.entityqueue.delay(self.newpos,not self.down)
+        #self.entityqueue.delay(self.pos)
+        #self.entity.initiative=self.previnit
         #order may have changed
-        self.entityqueue.sort()
+        #self.entityqueue.sort()
 
 class AddCommand(Command):
 
@@ -113,12 +115,12 @@ class AddCommand(Command):
     def execute(self):
         for e in self.entities:
             self.entityqueue.append(e)
-        self.entityqueue.sort()
+        #self.entityqueue.sort()
 
     def undo(self):
         for e in self.entities:
             self.entityqueue.remove(e)
-        self.entityqueue.sort()
+        #self.entityqueue.sort()
 
 class CommandHistory:
 
