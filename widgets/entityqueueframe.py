@@ -24,7 +24,7 @@ class EntityQueueFrame(VerticalScrolledFrame):
             # header
 
             Label(self.interior, textvariable=self.round, bg='white', font=self.boldfont) \
-                .grid(row=0, column=0, columnspan=8, sticky=EW, pady=5)
+                .grid(row=0, column=0, columnspan=9, sticky=EW, padx=5, pady=5)
             Label(self.interior, text="Active", bg='white', font=self.boldfont) \
                 .grid(row=1, column=0, sticky=EW, padx=5, pady=5)
             Label(self.interior, text="Nr", bg='white', font=self.boldfont) \
