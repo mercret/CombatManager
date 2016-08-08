@@ -4,7 +4,7 @@ class Entity:
     formInactive = "[{:15} ({:2.0f}) {:2}/{:2}]"
 
     # constructor
-    def __init__(self, name, bonus, maxHealth, roll, isPlayer=False):
+    def __init__(self, name, bonus, maxHealth, roll, ac, isPlayer=False):
         self.active = True
         self.name = name
         self.bonus = bonus
@@ -12,6 +12,7 @@ class Entity:
         self.health = maxHealth
         self.isPlayer = isPlayer
         self.roll = roll
+        self.ac=ac
         self.updateinitiative()
 
     def updateinitiative(self):
@@ -23,7 +24,7 @@ class Entity:
     # clas method for constructing using dict
     @classmethod
     def fromDict(cls, d):
-        e = cls(d["name"], d["bonus"], d["maxHealth"], 0, d["isPlayer"])
+        e = cls(d["name"], d["bonus"], d["maxHealth"], 0, d["ac"], d["isPlayer"])
         e.active = d["active"]
         e.health = d["health"]
         e.initiative = d["initiative"]

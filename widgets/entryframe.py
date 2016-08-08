@@ -26,10 +26,15 @@ class EntryFrame(Frame):
         Label(self, text="Bonus:").grid(row=2, column=0, sticky=W)
         self.bonusEntry = Entry(self, textvariable=self.bonus, width=4)
         self.bonusEntry.grid(row=2, column=1, sticky=W)
+        #Armor Class
+        self.ac= IntVar()
+        Label(self, text="Armor Class:").grid(row=3,column=0,sticky=W)
+        self.acEntry=Entry(self,textvariable=self.ac,width=4)
+        self.acEntry.grid(row=3, column=1,sticky=W)
         # Index
         self.index = StringVar()
         self.indexLabel = Label(self, textvariable=self.index)
-        self.indexLabel.grid(row=3, column=0, sticky=W)
+        self.indexLabel.grid(row=4, column=0, sticky=W)
         # Player
         self.player = BooleanVar()
         Label(self, text="Player:").grid(row=0, column=3, sticky=W)
@@ -51,13 +56,13 @@ class EntryFrame(Frame):
         self.addToCombatButton = Button(self, text="Add To Combat", command=self.addToCombatCallback)
         if not self.combatmanager.started:
             self.addToCombatButton['state'] = 'disabled'
-        self.addToCombatButton.grid(row=3, column=1, sticky=EW, padx=5, pady=5)
+        self.addToCombatButton.grid(row=4, column=1, sticky=EW, padx=5, pady=5)
         # Save
         self.saveButton = Button(self, text="Save", command=self.saveCallback)
-        self.saveButton.grid(row=3, column=3, sticky=W, padx=5, pady=5)
+        self.saveButton.grid(row=4, column=3, sticky=W, padx=5, pady=5)
         # Destroy
         self.destroyButton = Button(self, text="x", command=self.destroyCallback)
-        self.destroyButton.grid(row=3, column=4, sticky=E, padx=5, pady=5)
+        self.destroyButton.grid(row=4, column=4, sticky=E, padx=5, pady=5)
 
     def playerCheckboxCallback(self):
         if (self.player.get()):
@@ -75,6 +80,7 @@ class EntryFrame(Frame):
         d['name'] = self.name.get()
         d['health'] = self.health.get()
         d['bonus'] = self.bonus.get()
+        d['ac']=self.ac.get()
         d['player'] = self.player.get()
         d['autoroll'] = self.autoroll.get()
         d['amount'] = self.amount.get()
@@ -96,6 +102,7 @@ class EntryFrame(Frame):
         self.name.set(entity['name'])
         self.health.set(entity['health'])
         self.bonus.set(entity['bonus'])
+        self.ac.set(entity['ac'])
         self.player.set(entity['player'])
         self.autoroll.set(entity['autoroll'])
         self.amount.set(entity['amount'])
@@ -112,13 +119,20 @@ class EntryFrame(Frame):
         else:
             error = True
             self.healthEntry['background'] = 'red'
-            # bonus
+        # bonus
         try:
             self.bonus.get()
             self.bonusEntry['background'] = 'white'
         except (ValueError, TclError):
             error = True
             self.bonusEntry['background'] = 'red'
+        #ac
+        try:
+            self.ac.get()
+            self.acEntry['background']='white'
+        except (ValueError,TclError):
+            error=True
+            self.acEntry['background']='red'
         # player
         if not self.player.get():
             # amount

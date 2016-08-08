@@ -202,7 +202,7 @@ class CombatManager(Tk):
             entities = []
             for j in range(e.amount.get()):
                 entities.append(
-                    Entity(rd.names[i], e.bonus.get(), dice.getHealth(e.health.get()), rd.rolls[i], e.player.get()))
+                    Entity(rd.names[i], e.bonus.get(), dice.getHealth(e.health.get()), rd.rolls[i], e.ac.get(), e.player.get()))
                 i += 1
 
             command = AddCommand(self.queue, entities)
@@ -237,8 +237,7 @@ class CombatManager(Tk):
                 for e in self.entities:
                     for j in range(e.amount.get()):
                         self.queue.append(
-                            Entity(rd.names[i], e.bonus.get(), dice.getHealth(e.health.get()), rd.rolls[i],
-                                   e.player.get()))
+                            Entity(rd.names[i], e.bonus.get(), dice.getHealth(e.health.get()), rd.rolls[i], e.ac.get(),e.player.get()))
                         i += 1
 
                 #self.queue.sort()
