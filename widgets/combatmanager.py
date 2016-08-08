@@ -80,27 +80,21 @@ class CombatManager(Tk):
 
         # command line, run ,undo, redo and next buttons
         self.commandstring = StringVar()
-        # Label(self,text="Command:").grid(row=1,column=4)
-        Label(self, text="Command:").grid(row=2, column=4)
+        Label(self, text="Command:").grid(row=2, column=4,sticky=E)
         self.commandEntry = Combobox(self, textvariable=self.commandstring, state='disabled',
                                      postcommand=self.updateHistory)
         self.commandEntry.bind('<Return>', self.runCallback)
         self.commandEntry.bind('<KP_Enter>', self.runCallback)
-        # self.commandEntry.grid(row=1,column=5,sticky=W)
         self.commandEntry.grid(row=2, column=5, sticky=EW)
         self.runButton = Button(self, text="Run", command=self.runCallback, state='disabled')
-        # self.runButton.grid(row=1,column=6,sticky=EW)
         self.runButton.grid(row=2, column=6, sticky=EW)
         self.undoButton = Button(self, text="Undo", command=self.undoCallback, state='disabled')
-        # self.undoButton.grid(row=1,column=7,sticky=EW)
         self.undoButton.grid(row=2, column=7, sticky=EW)
         self.redoButton = Button(self, text="Redo", command=self.redoCallback, state='disabled')
-        # self.redoButton.grid(row=1,column=8,sticky=EW)
         self.redoButton.grid(row=2, column=8, sticky=EW)
 
         self.nextButton = Button(self, text="Next", command=self.nextCallback, state='disabled')
         self.nextButton.grid(row=1, column=4, columnspan=5, sticky=EW)
-        # self.nextButton.grid(row=1,column=9,sticky=EW)
 
         # General Key Bindings
         self.bind('<Control-q>', self.exitCallback)
@@ -109,6 +103,7 @@ class CombatManager(Tk):
         self.bind('<Control-n>', self.nextCallback)
         self.bind('<Control-o>', self.loadFightCallback)
         self.bind('<Control-s>',self.saveFightCallback)
+        self.bind('<Control-c>',self.focusCallback)
 
         # Load Settings
         self.loadSettings()
@@ -268,35 +263,42 @@ class CombatManager(Tk):
         # heals entity with index n hp points
         elif (commandstring[0] == commands[1] or commandstring[0] == shortcuts[1]) and len(commandstring) == 3:
             try:
-                command = HealCommand(self.queue, int(commandstring[1]), int(commandstring[2]))
+                command = HealCommand(self.queue, int(commandstring[1])-1, int(commandstring[2]))
             except ValueError:
                 messagebox.showwarning("Run", 'Not a valid number.')
         # usage: damage n hp
         # damages entity with index n hp points
         elif (commandstring[0] == commands[2] or commandstring[0] == shortcuts[2]) and len(commandstring) == 3:
             try:
-                command = DamageCommand(self.queue, int(commandstring[1]), int(commandstring[2]))
+                command = DamageCommand(self.queue, int(commandstring[1])-1, int(commandstring[2]))
             except ValueError:
                 messagebox.showwarning("Run", 'Not a valid number.')
         # usage: remove n
         # remove entity with number n from queue
         elif (commandstring[0] == commands[3] or commandstring[0] == shortcuts[3]) and len(commandstring) == 2:
             try:
-                command = RemoveCommand(self.queue, int(commandstring[1]))
+                command = RemoveCommand(self.queue, int(commandstring[1])-1)
             except ValueError:
                 messagebox.showwarning("Run", 'Not a valid number.')
         # usage: restore n
         # revive a previously removed entity from the queue
         elif (commandstring[0] == commands[4] or commandstring[0] == shortcuts[4]) and len(commandstring) == 2:
             try:
-                command = RestoreCommand(self.queue, int(commandstring[1]))
+                command = RestoreCommand(self.queue, int(commandstring[1])-1)
             except ValueError:
                 messagebox.showwarning("Run", 'Not a valid number.')
-        # usage: delay n
-        # substract n from current entity. n can be negative.
-        elif (commandstring[0] == commands[5] or commandstring[0] == shortcuts[5]) and len(commandstring) == 2:
+        # usage: delay n up/down
+        # delay entity with number n up or down
+        elif (commandstring[0] == commands[5] or commandstring[0] == shortcuts[5]) and len(commandstring) == 3:
             try:
-                command = DelayCommand(self.queue, int(commandstring[1]))
+                if commandstring[2]=='down':
+                    down=True
+                elif commandstring[2]=='up':
+                    down=False
+                else:
+                    messagebox.showwarning("Run","Use Up/Down")
+                    return
+                command = DelayCommand(self.queue, int(commandstring[1])-1,down)
             except ValueError:
                 messagebox.showwarning("Run", 'Not a valid number.')
         # help
@@ -493,6 +495,9 @@ class CombatManager(Tk):
                 f.close()
             except OSError:
                 messagebox.showerror("Save Settings", "Could not save settings")
+
+    def focusCallback(self,event=None):
+        self.commandEntry.focus()
 
     def exitCallback(self, event=None):
         if messagebox.askyesno("Exit", "Are you sure you want to exit?"):

@@ -6,7 +6,7 @@ helpmessages=['Moves to next entity in the queue',
               'Damages entity with index n hp points',
               'Removes entity with index n from queue, by setting it to inactive',
               'Restore entity with index n to queue, by setting it to active',
-              'Delays current entity, n is substracted from initiative value. n can be negative',
+              'Delays entity with index n up or down',
               'Displays help about command',
               'Stop the program']
 #[helpform.format(commands[x],usage[x],shortcuts[x],helpmessages[x]) for x in range(0,len(commands))]
