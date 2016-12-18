@@ -23,9 +23,9 @@ class CombatManager(Tk):
 
         # allows row 0 (=frame, textframe) to expand vertically
         self.rowconfigure(0, weight=1)
-        # allows columns starting with textframe to expand horizontally
-        for i in range(4, 9):
-            self.columnconfigure(i, weight=1)
+        # allows column 5 (=buttonframe) to expand horizontally
+        self.columnconfigure(5,weight=1)
+
 
         self.entities = []
         self.queue = EntityQueue()
@@ -33,6 +33,7 @@ class CombatManager(Tk):
         self.textcommandhistory = []
         self.commandhistory = CommandHistory()
         self.names = dict()
+        self.damage=1
         # Menu
         self.menubar = Menu(self)
         # File Menu
@@ -75,26 +76,51 @@ class CombatManager(Tk):
 
         #EntityQueueuFrame containing the EntityQueue
         self.eqf=EntityQueueFrame(self,self)
-        self.eqf.grid(row=0,column=4,columnspan=5,sticky=NSEW)
+        self.eqf.grid(row=0,column=4,columnspan=2,sticky=NSEW)
 
+        #Damage entry, half damage tickbox, in seperate frame
+        self.damageFrame=Frame(self)
+        self.damageFrame.grid(row=1,column=4,padx=5,pady=5,rowspan=2)
+        self.damageFrame['bd']=1
+        self.damageFrame['relief']='ridge'
+        Label(self.damageFrame,text="Damage:").grid(row=0, column=0,sticky=W, padx=5,pady=5)
+        self.damageVar=IntVar()
+        self.damageVar.set(1)
+        self.damageVar.trace('w',self.damageCallback)
+        self.damageEntry = Entry(self.damageFrame,width=2,textvariable=self.damageVar,state='disabled')
+        self.damageEntry.bind('<ButtonRelease-1>',self.damageEntryCallback)
+        self.damageEntry.grid(row=0,column=1,sticky=W,padx=5,pady=5)
+        Label(self.damageFrame,text="Half Damage:").grid(row=1,column=0,sticky=W,padx=5,pady=5)
+        self.halfdamage=BooleanVar()
+        self.halfdamage.set(False)
+        self.halfdamage.trace('w',self.damageCallback)
+        self.halfdamageCheckbutton=Checkbutton(self.damageFrame,variable=self.halfdamage,state='disabled')
+        self.halfdamageCheckbutton.grid(row=1,column=1,sticky=W,padx=5,pady=5)
 
-        # command line, run ,undo, redo and next buttons
+        # command line, run ,undo, redo and next buttons in seperate frame
+        self.buttonFrame=Frame(self)
+        self.buttonFrame.grid(row=1,column=5,padx=5,pady=5,rowspan=2,sticky=EW)
+        for i in range(5):
+            self.buttonFrame.columnconfigure(i,weight=1)
+
+        self.nextButton = Button(self.buttonFrame, text="Next", command=self.nextCallback, state='disabled')
+        self.nextButton.grid(row=0, column=0, columnspan=5, sticky=EW, padx=5, pady=5)
+
         self.commandstring = StringVar()
-        Label(self, text="Command:").grid(row=2, column=4,sticky=E)
-        self.commandEntry = Combobox(self, textvariable=self.commandstring, state='disabled',
+        Label(self.buttonFrame, text="Command:").grid(row=1, column=0,sticky=E, padx=5, pady=5)
+        self.commandEntry = Combobox(self.buttonFrame, textvariable=self.commandstring, state='disabled',
                                      postcommand=self.updateHistory)
         self.commandEntry.bind('<Return>', self.runCallback)
         self.commandEntry.bind('<KP_Enter>', self.runCallback)
-        self.commandEntry.grid(row=2, column=5, sticky=EW)
-        self.runButton = Button(self, text="Run", command=self.runCallback, state='disabled')
-        self.runButton.grid(row=2, column=6, sticky=EW)
-        self.undoButton = Button(self, text="Undo", command=self.undoCallback, state='disabled')
-        self.undoButton.grid(row=2, column=7, sticky=EW)
-        self.redoButton = Button(self, text="Redo", command=self.redoCallback, state='disabled')
-        self.redoButton.grid(row=2, column=8, sticky=EW)
+        self.commandEntry.grid(row=1, column=1, sticky=EW, padx=5, pady=5)
+        self.runButton = Button(self.buttonFrame, text="Run", command=self.runCallback, state='disabled')
+        self.runButton.grid(row=1, column=2, sticky=EW, padx=5, pady=5)
+        self.undoButton = Button(self.buttonFrame, text="Undo", command=self.undoCallback, state='disabled')
+        self.undoButton.grid(row=1, column=3, sticky=EW, padx=5, pady=5)
+        self.redoButton = Button(self.buttonFrame, text="Redo", command=self.redoCallback, state='disabled')
+        self.redoButton.grid(row=1, column=4, sticky=EW, padx=5, pady=5)
 
-        self.nextButton = Button(self, text="Next", command=self.nextCallback, state='disabled')
-        self.nextButton.grid(row=1, column=4, columnspan=5, sticky=EW)
+
 
         # General Key Bindings
         self.bind('<Control-q>', self.exitCallback)
@@ -160,6 +186,8 @@ class CombatManager(Tk):
 
     # enables certain widgets on start
     def enableWidgetsOnStart(self):
+        self.damageEntry['state']='normal'
+        self.halfdamageCheckbutton['state']='normal'
         self.commandEntry['state'] = 'normal'
         self.runButton['state'] = 'normal'
         # self.undoButton['state']='normal'
@@ -173,6 +201,8 @@ class CombatManager(Tk):
 
     # disables certain widgets on stop
     def disableWidgetsOnStop(self):
+        self.damageEntry['state']='disabled'
+        self.halfdamageCheckbutton['state']='disabled'
         self.commandEntry['state'] = 'disabled'
         self.runButton['state'] = 'disabled'
         self.undoButton['state'] = 'disabled'
@@ -240,6 +270,21 @@ class CombatManager(Tk):
 
                 self.enableWidgetsOnStart()
                 self.started = True
+
+    def damageEntryCallback(self,event=None):
+        self.halfdamage.set(False)
+        self.damageEntry.selection_range(0,END)
+        return 'break'
+
+    def damageCallback(self, *args):
+        try:
+            if self.halfdamage.get():
+                self.damage=int(self.damageVar.get()/2)
+            else:
+                self.damage=self.damageVar.get()
+            self.refreshDisplay()
+        except:
+            pass
 
     def nextCallback(self, event=None):
         if self.started:

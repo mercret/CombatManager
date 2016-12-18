@@ -100,8 +100,10 @@ class EntityContainer():
         self.health = StringVar()
         Label(master, textvariable=self.health, width=5, bg='white') \
             .grid(row=row, column=5, sticky=EW, padx=5, pady=5, rowspan=2)
-        Button(master, text="+", command=self.healCallback).grid(row=row, column=6, sticky=EW, padx=5)
-        Button(master, text="-", command=self.damageCallback).grid(row=row + 1, column=6, sticky=EW, padx=5)
+        self.hpup= StringVar()
+        Button(master, textvariable=self.hpup, width=4, command=self.healCallback).grid(row=row, column=6, sticky=EW, padx=5)
+        self.hpdown= StringVar()
+        Button(master, textvariable=self.hpdown, width=4, command=self.damageCallback).grid(row=row + 1, column=6, sticky=EW, padx=5)
         # ac
         self.ac = StringVar()
         Label(master, textvariable=self.ac, bg='white') \
@@ -119,6 +121,8 @@ class EntityContainer():
         self.initiative.set('{:2.0f}'.format(entity.initiative))
         self.health.set('{:2}/{:2}'.format(entity.health, entity.maxHealth))
         self.ac.set('{}'.format(entity.ac))
+        self.hpup.set('+ {}'.format(self.combatmanager.damage))
+        self.hpdown.set('- {}'.format(self.combatmanager.damage))
 
         if self.pos == 0:
             self.upButton['state'] = 'disable'
@@ -132,10 +136,10 @@ class EntityContainer():
         self.combatmanager.executeCommand(DelayCommand(self.combatmanager.queue, self.pos, False))
 
     def damageCallback(self):
-        self.combatmanager.executeCommand(DamageCommand(self.combatmanager.queue, self.pos, 1))
+        self.combatmanager.executeCommand(DamageCommand(self.combatmanager.queue, self.pos, self.combatmanager.damage))
 
     def healCallback(self):
-        self.combatmanager.executeCommand(HealCommand(self.combatmanager.queue, self.pos, 1))
+        self.combatmanager.executeCommand(HealCommand(self.combatmanager.queue, self.pos, self.combatmanager.damage))
 
     def removeCallback(self):
         if self.entity.active:
