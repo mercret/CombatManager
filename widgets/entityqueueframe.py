@@ -113,10 +113,7 @@ class EntityContainer():
     def fillin(self, index, entity, arrow):
         self.pos = index
         self.entity = entity
-        if not entity.active:
-            self.arrow.set('X')
-        else:
-            self.arrow.set('\u2192' if arrow else '')
+        self.arrow.set('{}{}'.format('\u2192' if arrow else '','X' if not entity.active else ''))
         self.index.set('{}'.format(index + 1))
         self.name.set('{}'.format(entity.name))
         self.initiative.set('{:2.0f}'.format(entity.initiative))

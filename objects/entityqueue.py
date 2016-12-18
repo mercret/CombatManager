@@ -107,7 +107,7 @@ class EntityQueue:
                 if self.position == self.length:
                     self.position = 0
                     self.round += 1
-                if self.queue[self.position].active:
+                if self.queue[self.position].isPlayer or self.queue[self.position].active:
                     done = True
 
     # returns the number of enemies currently active in the queue
