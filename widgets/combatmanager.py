@@ -13,6 +13,7 @@ from widgets.entityqueueframe import EntityQueueFrame
 from widgets.entryframe import EntryFrame
 from widgets.rolldialog import RollDialog
 from widgets.settingsdialog import SettingsDialog
+from widgets.dicedialog import DiceDialog
 from widgets.verticalscrolledframe import VerticalScrolledFrame
 
 
@@ -48,7 +49,12 @@ class CombatManager(Tk):
         self.filemenu.add_separator()
         self.filemenu.add_command(label="Exit", command=self.exitCallback)
 
+        #Tools Menu
+        self.toolsmenu= Menu(self.menubar, tearoff=0)
+        self.toolsmenu.add_command(label="Die Roll", command=self.dierollCallback)
+
         self.menubar.add_cascade(label="Menu", menu=self.filemenu)
+        self.menubar.add_cascade(label="Tools", menu=self.toolsmenu)
         self.config(menu=self.menubar)
 
         #VerticalScrolledFrame containing EntityFrames
@@ -540,6 +546,9 @@ class CombatManager(Tk):
                 f.close()
             except OSError:
                 messagebox.showerror("Save Settings", "Could not save settings")
+
+    def dierollCallback(self):
+        dr=DiceDialog(self)
 
     def focusCallback(self,event=None):
         self.commandEntry.focus()

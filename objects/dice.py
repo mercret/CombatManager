@@ -24,6 +24,12 @@ class Dice(Enum):
     def isRoll(self,roll):
         return roll>0 and roll<=self.value
 
+def isRoll(string):
+    return pattern1.match(string)!=None
+
+def getRoll(string):
+    return getHealth(string)
+
 def isHealth(string):
     return pattern1.match(string)!=None or pattern2.match(string)!=None
 
