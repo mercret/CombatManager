@@ -8,13 +8,14 @@ class DiceDialog(Toplevel):
     def __init__(self,master):
         Toplevel.__init__(self,master)
 
-        self.largefont = tkinter.font.Font(size=20)
 
         self.title("Die Roll")
+        self.resizable(False,False)
+        self.largefont = tkinter.font.Font(size=20)
 
         Label(self,text="Dice").grid(row=0,column=0,padx=5,pady=5)
         self.dievar=StringVar()
-        self.entry=Entry(self,textvariable=self.dievar)
+        self.entry=Entry(self,textvariable=self.dievar,width=10)
         self.entry.bind("<Return>",self.rollCallback)
         self.entry.bind("<KP_Enter>",self.rollCallback)
         self.entry.grid(row=0,column=1,padx=5,pady=5)

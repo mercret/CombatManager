@@ -25,15 +25,9 @@ class Dice(Enum):
         return roll>0 and roll<=self.value
 
 def isRoll(string):
-    return pattern1.match(string)!=None
+    return pattern1.match(string) is not None
 
 def getRoll(string):
-    return getHealth(string)
-
-def isHealth(string):
-    return pattern1.match(string)!=None or pattern2.match(string)!=None
-
-def getHealth(string):
     if pattern1.match(string):
         spl=pattern1.split(string)[1:-2]
         if spl==[]:
@@ -47,10 +41,17 @@ def getHealth(string):
             mod=0
         else:
             mod=int(spl[2])
-        health=0
+        roll=0
         for i in range(throws):
-            health+=Dice[dice].roll()
-        return health+mod
+            roll+=Dice[dice].roll()
+        return roll+mod
+
+def isHealth(string):
+    return pattern1.match(string) is not None or pattern2.match(string) is not None
+
+def getHealth(string):
+    if pattern1.match(string):
+        return getRoll(string)
     if pattern2.match(string):
         return int(string)
         
