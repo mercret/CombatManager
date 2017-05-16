@@ -10,32 +10,36 @@ class SettingsDialog(Toplevel):
         Toplevel.__init__(self,master)
         self.oldsettings=copy.deepcopy(settings)
         self.settings=copy.deepcopy(settings)
-        
+
         self.title("Settings")
         self.transient(master)
+        #disable vertical resizing
+        self.resizable(True,False)
 
         self.frame=Frame(self)
+        #allow entries to be resizable in width
+        self.frame.columnconfigure(1,weight=1)
 
         #Fight Dir
-        Label(self.frame,text='Fight Directory').grid(row=0,column=0,padx=5,pady=5)
+        Label(self.frame,text='Fight Directory').grid(row=0,column=0,padx=5,pady=5,sticky=W)
         self.fightdirvar=StringVar()
-        self.fightdirvar.trace('w',self.fightdirChange)                             
-        Entry(self.frame,textvariable=self.fightdirvar).grid(row=0,column=1,padx=5,pady=5)
-        Button(self.frame,text="Select",command=self.selectfightdirCallback).grid(row=0,column=2,padx=5,pady=5)
+        self.fightdirvar.trace('w',self.fightdirChange)
+        Entry(self.frame,textvariable=self.fightdirvar).grid(row=0,column=1,padx=5,pady=5,sticky=EW)
+        Button(self.frame,text="Select",command=self.selectfightdirCallback).grid(row=0,column=2,padx=5,pady=5,sticky=W)
         #Entity Dir
-        Label(self.frame,text='Entity Directory').grid(row=1,column=0,padx=5,pady=5)
+        Label(self.frame,text='Entity Directory').grid(row=1,column=0,padx=5,pady=5,sticky=W)
         self.entitydirvar=StringVar()
         self.entitydirvar.trace('w',self.entitydirChange)
-        
-        Entry(self.frame,textvariable=self.entitydirvar).grid(row=1,column=1,padx=5,pady=5)
-        Button(self.frame,text="Select",command=self.selectentitydirCallback).grid(row=1,column=2,padx=5,pady=5)
+
+        Entry(self.frame,textvariable=self.entitydirvar).grid(row=1,column=1,padx=5,pady=5,sticky=EW)
+        Button(self.frame,text="Select",command=self.selectentitydirCallback).grid(row=1,column=2,padx=5,pady=5,sticky=W)
         #Players
-        Label(self.frame,text='Player Files').grid(row=2,column=0,columnspan=4,padx=5,pady=5)
+        Label(self.frame,text='Player Files').grid(row=2,column=0,columnspan=4,padx=5,pady=5,sticky=W)
         self.playerlistbox=Listbox(self.frame)
         self.playerlistbox.grid(row=3,column=0,rowspan=2,columnspan=3,padx=5,pady=5,sticky=EW)
         Button(self.frame,text='+',command=self.addPlayerCallback,width=1).grid(row=3,column=3,padx=5,pady=5,sticky=E)
         Button(self.frame,text='-',command=self.removePlayerCallback,width=1).grid(row=4,column=3,padx=5,pady=5,sticky=E)
-        
+
         #button frame
         self.buttonframe=Frame(self)
         Button(self.buttonframe,text='Accept',command=self.acceptCallback).grid(row=0,column=0,padx=5,pady=5)
@@ -48,10 +52,10 @@ class SettingsDialog(Toplevel):
             self.playerlistbox.insert(END,p)
 
 
-        self.frame.pack(padx=5,pady=5)
+        self.frame.pack(padx=5,pady=5,fill=BOTH,expand=1)
         self.buttonframe.pack(padx=5,pady=5)
         self.grab_set()
-        self.wait_window(self)        
+        self.wait_window(self)
 
 
     def fightdirChange(self,name,index,mode):
