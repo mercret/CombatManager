@@ -262,6 +262,7 @@ class CombatManager(Tk):
             rd = RollDialog(self, self.entities, self.names)
             # print(self.names)
             if rd.rolls == None:
+                self.names.clear()
                 return
             else:
                 i = 0
