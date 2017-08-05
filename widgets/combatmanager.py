@@ -15,6 +15,7 @@ from widgets.rolldialog import RollDialog
 from widgets.settingsdialog import SettingsDialog
 from widgets.dicedialog import DiceDialog
 from widgets.verticalscrolledframe import VerticalScrolledFrame
+from widgets.groupdamagedialog import GroupDamageDialog
 
 
 class CombatManager(Tk):
@@ -52,6 +53,7 @@ class CombatManager(Tk):
         #Tools Menu
         self.toolsmenu= Menu(self.menubar, tearoff=0)
         self.toolsmenu.add_command(label="Die Roll", command=self.dierollCallback)
+        self.toolsmenu.add_command(label="Group Damage", command=self.groupdamageCallback, state="disable")
 
         self.menubar.add_cascade(label="Menu", menu=self.filemenu)
         self.menubar.add_cascade(label="Tools", menu=self.toolsmenu)
@@ -204,6 +206,7 @@ class CombatManager(Tk):
                 ef.addToCombatButton['state'] = 'normal'
                 # ef.autoroll.set(False)
         self.filemenu.entryconfig("Save Fight", state='normal')
+        self.toolsmenu.entryconfig("Group Damage", state='normal')
 
     # disables certain widgets on stop
     def disableWidgetsOnStop(self):
@@ -219,6 +222,8 @@ class CombatManager(Tk):
                 ef.addToCombatButton['state'] = 'disabled'
                 # ef.autoroll.set(True)
         self.filemenu.entryconfig("Save Fight", state='disable')
+        self.toolsmenu.entryconfig("Group Damage", state='disable')
+
 
     #external callbacks (=called from object other than combatmanager)
     def addToCombat(self, e):
@@ -550,6 +555,9 @@ class CombatManager(Tk):
 
     def dierollCallback(self):
         dr=DiceDialog(self)
+
+    def groupdamageCallback(self):
+        gdd=GroupDamageDialog(self,self.queue)
 
     def focusCallback(self,event=None):
         self.commandEntry.focus()
